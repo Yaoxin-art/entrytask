@@ -1,0 +1,19 @@
+# temp file
+*.lock
+*.tmp
+*.swp
+*.log
+coverage.txt
+bin/
+
+# goland
+*.yml
+.idea/
+
+# golang depnedencies
+*.a
+src/
+vendor/
+
+
+
