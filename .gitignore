@@ -3,6 +3,7 @@
 *.tmp
 *.swp
 *.log
+*.out
 coverage.txt
 bin/
 

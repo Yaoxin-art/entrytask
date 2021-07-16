@@ -6,6 +6,12 @@ import (
 
 //initRouter
 func initRouter(engine *gin.Engine) {
-	engine.GET("/user/list", query)
+	engine.POST("/user/login", login)
+	engine.POST("/user/logon", logon)
+	engine.POST("/user/logout", logout)
+	engine.GET("/user/info", info)
+	engine.GET("/user/find", findByUsername)
+	engine.POST("/user/profile", profileUpdate)
+	engine.GET("/user/nick", nickUpdate)
 	engine.GET("/ping", ping)
 }

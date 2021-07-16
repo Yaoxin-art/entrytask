@@ -1,8 +1,8 @@
 .PHONY: build clean fmt vet test bench cover profiling
 
-ARGS=-args -httpPort=":3333"
+ARGS=
 COVERPROFILE=coverage.txt
-DEBUG=DEBUG
+DEBUG=
 
 build: clean fmt vet test
 	go build internal/web/...
@@ -15,17 +15,23 @@ clean:
 	if [ -f "coverage.txt" ] ; then rm coverage.txt; fi
 
 fmt:
-	go fmt ./cmd/web/*
-	go fmt ./cmd/practice/*
-	go fmt ./cmd/worker/*
-	go fmt ./internal/web/*
-	go fmt ./pkg/zerorpc/*
+	go fmt ./cmd/...
+	go fmt ./internal/...
+	go fmt ./pkg/...
 
 vet:
-	go fmt ./cmd/web/*
-	go fmt ./cmd/worker/*
-	go fmt ./internal/web/*
-	go fmt ./pkg/zerorpc/*
+	go fmt ./cmd/...
+	go fmt ./internal/...
+	go fmt ./pkg/...
 
 test:
-	go test ./internal/**/* -coverprofile=$(COVERPROFILE) -race $(DEBUG) $(ARGS) -covermode=automic -v
+	go test ./internal/... -coverprofile=$(COVERPROFILE) -covermode atomic -v -race $(DEBUG) $(ARGS)
+
+cover:
+	$(eval COVERPREFILE += -coverprofile=coverage.out)
+	go test ./internal/... -cover $(COVERPREFILE) -race $(ARGS) $(DEBUG)
+	go tool cover -html=coverage.out
+	rm -f coverage.out
+
+profiling:
+	go test -bench=/internal -cpuprofile cpu.out -memprofile mem.out $ARGS

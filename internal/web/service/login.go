@@ -1,6 +1,8 @@
 package service
 
-func Login(username, password string) int {
+import "git.garena.com/zhenrong.zeng/entrytask/internal/facade"
+
+func Login(request facade.UserLoginRequest) int {
 	// TODO
-	return 0
+	return 1
 }
