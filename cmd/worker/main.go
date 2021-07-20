@@ -27,13 +27,14 @@ func initLog() {
 }
 
 const serverAddr = ":9999"
+
 var server *zerorpc.Server
 
 func main() {
 	initLog()
 	server = zerorpc.NewServer(serverAddr)
-	registerRPC() 		// register rpc service
-	go server.Run()		// run rpc server
+	registerRPC()   // register rpc service
+	go server.Run() // run rpc server
 
 	logger.Infof("worker app started, rpc server listen on[%s]", serverAddr)
 
@@ -41,7 +42,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	for {
 		<-c
-		server.Close()	// rpc server close while interrupt, or use "def server.Close()"
+		server.Close() // rpc server close while interrupt, or use "def server.Close()"
 		logger.Info("work app graceful shutdown...")
 		return
 	}

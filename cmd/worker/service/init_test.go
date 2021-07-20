@@ -8,7 +8,7 @@ import (
 
 // TestPrepareUser 仅用于准备用户数据
 func TestPrepareUser(t *testing.T) {
-	if 1 > 2 { // just for init data, ignore it
+	if 1 > 0 { // just for init data, ignore it
 		t.Logf("ignore")
 		return
 	}
@@ -21,4 +21,3 @@ func TestPrepareUser(t *testing.T) {
 	end := time.Now().Second()
 	t.Logf("init %d users, spent %d seconds", size, end-start)
 }
-

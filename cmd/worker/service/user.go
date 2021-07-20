@@ -63,7 +63,7 @@ func Login(request *facade.UserLoginRequest) (user facade.User, token string, er
 	}
 	encoded := selectPassword(request.Password)
 	logrus.Infof("request password:%s, password in db:%s", encoded, userT.Password)
-	if strings.Compare(encoded, userT.Password) != 0 {	// 密码不正确
+	if strings.Compare(encoded, userT.Password) != 0 { // 密码不正确
 		logrus.Warnf("login failure")
 		return facade.User{}, "", 2
 	}
@@ -150,7 +150,7 @@ func getTokenUsername(token string) string {
 // cacheTokenForUser 保存用户登录token与用户名的关系
 func cacheTokenForUser(token, username string) {
 	key := keyUserToken(token)
-	redisClient.Set(key, username, 30 * time.Minute)
+	redisClient.Set(key, username, 30*time.Minute)
 	logrus.Debugf("cache user login token:%s -> %s", username, key)
 }
 

@@ -29,20 +29,19 @@ func initLog() {
 }
 
 var (
-	httpPort		= ":7777"
-	rpcServerAddr	= "127.0.0.1:9999"
-
+	httpPort      = ":7777"
+	rpcServerAddr = "127.0.0.1:9999"
 )
 var client *zerorpc.Client
 
 func main() {
 	initLog()
 
-	client = zerorpc.NewClient()	// init rpc client instance
-	configRPC()						// config for rpc client
+	client = zerorpc.NewClient() // init rpc client instance
+	configRPC()                  // config for rpc client
 
-	httpServer := router.InitGin()	// init http server with gin
-	go httpServer.Run(httpPort)		// listen and serve on 0.0.0.0:7777
+	httpServer := router.InitGin() // init http server with gin
+	go httpServer.Run(httpPort)    // listen and serve on 0.0.0.0:7777
 
 	logrus.Infof("web app started, listen at:%s", httpPort)
 

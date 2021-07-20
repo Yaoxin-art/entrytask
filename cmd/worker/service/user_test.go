@@ -31,7 +31,7 @@ func TestQueryUserByUsername2(t *testing.T) {
 }
 
 var timestamp = time.Now().Unix()
-var ops int64 = 0
+var ops int64 = 10000000
 
 // TestRegisterUser 测试用户注册
 // case 1：正常信息注册
@@ -152,7 +152,6 @@ func TestUpdateUserProfile3(t *testing.T) {
 		t.Errorf("update user profile case:3 test failure, shold out err=1 but got:%d", err)
 	}
 }
-
 
 func TestGenerateToken(t *testing.T) {
 	t.Logf("generate token:%s", generateToken("zeng1234"))

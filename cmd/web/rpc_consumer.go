@@ -5,7 +5,6 @@ import (
 	"git.garena.com/zhenrong.zeng/entrytask/internal/facade"
 )
 
-
 func configRPC() {
 	client.Config(facade.Logon, rpcServerAddr, &facade.UserLogon)
 	client.Config(facade.Login, rpcServerAddr, &facade.UserLogin)
@@ -16,7 +15,6 @@ func configRPC() {
 
 	registerPojo()
 }
-
 
 func registerPojo() {
 	gob.Register(&facade.User{})

@@ -14,21 +14,21 @@ import (
 )
 
 type Response struct {
-	Code 	int			`json:"code"`
-	Msg 	string		`json:"msg"`
-	Data 	interface{}	`json:"data"`
+	Code int         `json:"code"`
+	Msg  string      `json:"msg"`
+	Data interface{} `json:"data"`
 }
 
 var (
-	profilePath		= "/Users/zhenrong.zeng/Workspaces/Data/entrytask"
-	profileURIPrefix= "https://127.0.0.1/entrytask/static"	// config at nginx
+	profilePath      = "/Users/zhenrong.zeng/Workspaces/Data/entrytask"
+	profileURIPrefix = "https://127.0.0.1/entrytask/static" // config at nginx
 )
 
 // ping 服务健康检查
 func ping(c *gin.Context) {
 	c.JSON(http.StatusOK, Response{
 		Code: 1,
-		Msg: "pong",
+		Msg:  "pong",
 	})
 }
 
@@ -48,19 +48,19 @@ func logon(c *gin.Context) {
 		// success
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
-			Msg: "success",
+			Msg:  "success",
 			Data: regName,
 		})
 	} else if bizErr == 1 {
 		c.JSON(http.StatusOK, Response{
 			Code: 2,
-			Msg: "duplicate username",
+			Msg:  "duplicate username",
 			Data: "",
 		})
 	} else {
 		c.JSON(http.StatusOK, Response{
 			Code: 3,
-			Msg: "bad request param",
+			Msg:  "bad request param",
 			Data: "",
 		})
 	}
@@ -78,21 +78,21 @@ func login(c *gin.Context) {
 	user, token, bizErr := facade.UserLogin(&request)
 	if bizErr == 0 {
 		// success
-		fillProfilePrefix(user)	// fillProfilePrefix
+		fillProfilePrefix(user) // fillProfilePrefix
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
-			Msg: token,
+			Msg:  token,
 			Data: user,
 		})
 	} else if bizErr == 2 {
 		c.JSON(http.StatusOK, Response{
 			Code: 3,
-			Msg: "failure",
+			Msg:  "failure",
 		})
 	} else {
 		c.JSON(http.StatusOK, Response{
 			Code: 2,
-			Msg: "username not exists",
+			Msg:  "username not exists",
 		})
 	}
 }
@@ -103,7 +103,7 @@ func logout(c *gin.Context) {
 	// 删除redis中token记录即可
 	c.JSON(http.StatusOK, Response{
 		Code: 1,
-		Msg: "not support",
+		Msg:  "not support",
 	})
 }
 
@@ -119,7 +119,7 @@ func info(c *gin.Context) {
 		fillProfilePrefix(user)
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
-			Msg: "success",
+			Msg:  "success",
 			Data: user,
 		})
 		return
@@ -127,7 +127,7 @@ func info(c *gin.Context) {
 		// 登录已过期
 		c.JSON(http.StatusOK, Response{
 			Code: 0,
-			Msg: "login invalid",
+			Msg:  "login invalid",
 		})
 		return
 	}
@@ -139,7 +139,7 @@ func findByUsername(c *gin.Context) {
 	if username == "" {
 		c.JSON(http.StatusOK, Response{
 			Code: 3,
-			Msg: "request param username is empty",
+			Msg:  "request param username is empty",
 		})
 		return
 	}
@@ -149,13 +149,13 @@ func findByUsername(c *gin.Context) {
 		fillProfilePrefix(user)
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
-			Msg: "success",
+			Msg:  "success",
 			Data: user,
 		})
 	} else {
 		c.JSON(http.StatusOK, Response{
 			Code: 2,
-			Msg: "not exists",
+			Msg:  "not exists",
 		})
 	}
 }
@@ -170,7 +170,7 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 		logrus.Errorf("upload file, get form file err:%v", err)
 		c.JSON(http.StatusBadRequest, Response{
 			Code: 0,
-			Msg: "file not valid",
+			Msg:  "file not valid",
 		})
 		return "", ""
 	}
@@ -183,7 +183,7 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 		logrus.Errorf("file to bytes err:%v, size:%v", err, size)
 		c.JSON(http.StatusBadRequest, Response{
 			Code: 0,
-			Msg: "file not valid",
+			Msg:  "file not valid",
 		})
 		return "", ""
 	}
@@ -202,9 +202,9 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 		logrus.Errorf("storage file err:%v", err)
 		return "", ""
 	}
-	logrus.Infof("upload file success, filename:%s, pathAppend:%s, url:%s", filename, pathAppend, profileURIPrefix + pathAppend)
+	logrus.Infof("upload file success, filename:%s, pathAppend:%s, url:%s", filename, pathAppend, profileURIPrefix+pathAppend)
 	// storage success
-	return pathAppend, profileURIPrefix+pathAppend
+	return pathAppend, profileURIPrefix + pathAppend
 }
 
 // profileUpdate 修改用户头像
@@ -225,14 +225,14 @@ func profileUpdate(c *gin.Context) {
 		// file storage failure
 		c.JSON(http.StatusOK, Response{
 			Code: 3,
-			Msg: "bad request",
+			Msg:  "bad request",
 		})
 		return
 	}
 	logrus.Debugf("upload file success, access profile url:%s", url)
 	// todo: param check
 	request := facade.UserUpdateRequest{
-		Username: username,
+		Username:    username,
 		ProfilePath: profile,
 	}
 	userNew, bizErrUpdate := facade.UserUpdateProfile(&request)
@@ -241,7 +241,7 @@ func profileUpdate(c *gin.Context) {
 		fillProfilePrefix(userNew)
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
-			Msg: "success",
+			Msg:  "success",
 			Data: userNew,
 		})
 		return
@@ -249,13 +249,13 @@ func profileUpdate(c *gin.Context) {
 		// user not exists
 		c.JSON(http.StatusOK, Response{
 			Code: 2,
-			Msg: "not login",
+			Msg:  "not login",
 		})
 		return
 	} else {
 		c.JSON(http.StatusOK, Response{
 			Code: 3,
-			Msg: "bad request",
+			Msg:  "bad request",
 		})
 		return
 	}
@@ -279,7 +279,7 @@ func nickUpdate(c *gin.Context) {
 	if nickname == "" {
 		c.JSON(http.StatusOK, Response{
 			Code: 3,
-			Msg: "bad request",
+			Msg:  "bad request",
 		})
 		return
 	}
@@ -293,7 +293,7 @@ func nickUpdate(c *gin.Context) {
 		fillProfilePrefix(userNew)
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
-			Msg: "success",
+			Msg:  "success",
 			Data: userNew,
 		})
 		return
@@ -301,13 +301,13 @@ func nickUpdate(c *gin.Context) {
 		// user not exists
 		c.JSON(http.StatusOK, Response{
 			Code: 2,
-			Msg: "not login",
+			Msg:  "not login",
 		})
 		return
 	} else {
 		c.JSON(http.StatusOK, Response{
 			Code: 3,
-			Msg: "bad request",
+			Msg:  "bad request",
 		})
 		return
 	}
@@ -322,10 +322,9 @@ func fillProfilePrefix(user *facade.User) {
 	}
 }
 
-
 func notLogin(c *gin.Context) {
 	c.JSON(http.StatusOK, Response{
 		Code: 0,
-		Msg: "not login",
+		Msg:  "not login",
 	})
 }

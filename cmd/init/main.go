@@ -16,7 +16,6 @@ func main() {
 	mysqlPassword("123456")
 }
 
-
 // mysqlPassword mysql password encrypt
 // '*' + UPPER(SHA1(UNHEX(SHA1(word))))
 func mysqlPassword(password string) string {

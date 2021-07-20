@@ -5,10 +5,10 @@ import "fmt"
 // User
 // 返回用户信息对象
 type User struct {
-	Id          int64		`json:"id"`
-	Username    string		`json:"username"`
-	Nickname    string		`json:"nickname"`
-	ProfilePath string		`json:"profile"`
+	Id          int64  `json:"id"`
+	Username    string `json:"username"`
+	Nickname    string `json:"nickname"`
+	ProfilePath string `json:"profile"`
 }
 
 // User.String
@@ -18,9 +18,9 @@ func (u User) String() string {
 
 // UserLogonRequest 用户注册时的请求对象
 type UserLogonRequest struct {
-	Username string			`json:"username"`
-	Nickname string			`json:"nickname"`
-	Password string			`json:"password"`
+	Username string `json:"username"`
+	Nickname string `json:"nickname"`
+	Password string `json:"password"`
 }
 
 // UserLogonRequest.String 去除密码打印
@@ -30,8 +30,8 @@ func (ulr *UserLogonRequest) String() string {
 
 // UserLoginRequest 用户登录时的请求对象
 type UserLoginRequest struct {
-	Username string			`json:"username"`
-	Password string			`json:"password"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 // UserLoginRequest.String 去除密码打印
@@ -43,10 +43,11 @@ func (ulr *UserLoginRequest) String() string {
 // 更新昵称时，Username和Nickname不可为空
 // 更新头像时，Username和ProfilePath不可为空
 type UserUpdateRequest struct {
-	Username    string		`json:"username"`
-	Nickname    string		`json:"nickname"`
-	ProfilePath string		`json:"profile"`
+	Username    string `json:"username"`
+	Nickname    string `json:"nickname"`
+	ProfilePath string `json:"profile"`
 }
+
 //
 //// BizError 业务异常类型
 //type BizError int
@@ -76,13 +77,11 @@ var UserLogin func(request *UserLoginRequest) (user *User, token string, err int
 // err:		异常，0-成功，1-用户名不存在
 var UserQuery func(username string) (user *User, err int)
 
-
 // UserQueryByToken 查询用户信息暴露方法: "QueryUserByToken"
 // return user User, err BizError
 // user:	返回用户详细信息
 // err:		异常，0-成功，1-用户名不存在
 var UserQueryByToken func(token string) (user *User, err int)
-
 
 // UserUpdateProfile 更新用户头像暴露方法: "UpdateNick"
 // return user User, err int
