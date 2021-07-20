@@ -43,7 +43,7 @@ func TestRegisterUser1(t *testing.T) {
 	nickname := "zero No." + ctime
 	password := "123456"
 	user := facade.UserLogonRequest{Username: username, Nickname: nickname, Password: password}
-	name, err := Logon(user)
+	name, err := Logon(&user)
 	if err != 0 || name == "" {
 		t.Errorf("register user:%v failure, name:%s", user, name)
 	}
@@ -58,7 +58,7 @@ func TestRegisterUser2(t *testing.T) {
 	nickname := "zero No.1234"
 	password := "123456"
 	user := facade.UserLogonRequest{Username: username, Nickname: nickname, Password: password}
-	_, err := Logon(user)
+	_, err := Logon(&user)
 	if err == 0 {
 		t.Errorf("register user:%v case:2 test failure, code:%d", user, err)
 	}
@@ -71,9 +71,9 @@ func TestRegisterUser2(t *testing.T) {
 // todo
 func TestLogin(t *testing.T) {
 	request := facade.UserLoginRequest{Username: "zero1234", Password: "123456"}
-	user, err := Login(request)
+	user, token, err := Login(&request)
 	if err == 0 {
-		t.Logf("login success, user:%v", user)
+		t.Logf("login success, user:%v, token:%s", user, token)
 	} else {
 		t.Errorf("login failure, should err=0, but got:%d", err)
 	}
@@ -84,7 +84,7 @@ func TestLogin(t *testing.T) {
 func TestUpdateUserNick1(t *testing.T) {
 	time.Sleep(2 * time.Second) // 睡眠2秒，用于update profile 测试用例时间差
 	request := facade.UserUpdateRequest{Username: "zero1234", Nickname: "zero No.1234"}
-	user, err := UpdateUserNick(request)
+	user, err := UpdateUserNick(&request)
 	if err == 0 {
 		t.Logf("update user nickname case:1 test success, updated user:%v", user)
 	} else {
@@ -96,7 +96,7 @@ func TestUpdateUserNick1(t *testing.T) {
 // case 2：不存在的用户更新
 func TestUpdateUserNick2(t *testing.T) {
 	request := facade.UserUpdateRequest{Username: "zero.not.exist", Nickname: "zero No.1234"}
-	_, err := UpdateUserNick(request)
+	_, err := UpdateUserNick(&request)
 	if err == 2 {
 		t.Log("update user nickname case:2 test success")
 	} else {
@@ -108,7 +108,7 @@ func TestUpdateUserNick2(t *testing.T) {
 // case 3：参数不完整
 func TestUpdateUserNick3(t *testing.T) {
 	request := facade.UserUpdateRequest{Username: "zero1234"}
-	_, err := UpdateUserNick(request)
+	_, err := UpdateUserNick(&request)
 	if err == 1 {
 		t.Log("update user nickname case:3 test success")
 	} else {
@@ -121,7 +121,7 @@ func TestUpdateUserNick3(t *testing.T) {
 func TestUpdateUserProfile1(t *testing.T) {
 	time.Sleep(2 * time.Second) // 睡眠2秒，用于update nickname 测试用例时间差
 	request := facade.UserUpdateRequest{Username: "zero1234", ProfilePath: "/profile/default.jpg"}
-	user, err := UpdateUserProfile(request)
+	user, err := UpdateUserProfile(&request)
 	if err == 0 {
 		t.Logf("update user profile case:1 test success, updated user:%v", user)
 	} else {
@@ -133,7 +133,7 @@ func TestUpdateUserProfile1(t *testing.T) {
 // case 2：不存在的用户更新
 func TestUpdateUserProfile2(t *testing.T) {
 	request := facade.UserUpdateRequest{Username: "zero_not_exist", ProfilePath: "/profile/avatar.jpg"}
-	_, err := UpdateUserProfile(request)
+	_, err := UpdateUserProfile(&request)
 	if err == 2 {
 		t.Log("update user profile case:2 test success")
 	} else {
@@ -145,10 +145,15 @@ func TestUpdateUserProfile2(t *testing.T) {
 // case 3：参数不完整
 func TestUpdateUserProfile3(t *testing.T) {
 	request := facade.UserUpdateRequest{Username: "zero1234", ProfilePath: ""}
-	_, err := UpdateUserProfile(request)
+	_, err := UpdateUserProfile(&request)
 	if err == 1 {
 		t.Log("update user profile case:3 test success")
 	} else {
 		t.Errorf("update user profile case:3 test failure, shold out err=1 but got:%d", err)
 	}
+}
+
+
+func TestGenerateToken(t *testing.T) {
+	t.Logf("generate token:%s", generateToken("zeng1234"))
 }

@@ -134,13 +134,13 @@ func (s *Server) handleNewConn(session *Session) {
 			}
 			continue
 		}
-		logrus.Infof("get request from invocation for method:%s : %T", invocation.MethodId, foo)
+		//logrus.Infof("get request from invocation for method:%s : %T", invocation.MethodId, foo)
 		inArgs := make([]reflect.Value, 0, len(invocation.Args))
 		for _, arg := range invocation.Args {
 			inArgs = append(inArgs, reflect.ValueOf(arg))
 		}
 		out := foo.Call(inArgs) // invoke
-		logrus.Infof("call method success, method:%T, out:%v", foo, out)
+		//logrus.Infof("call method success, method:%T, out:%v", foo, out)
 		result.ResponseTimestamp = time.Now().UnixNano() // invoke end timestamp
 		outArgs := make([]interface{}, 0, len(out))
 		for _, o := range out {

@@ -10,6 +10,7 @@ func configRPC() {
 	client.Config(facade.Logon, rpcServerAddr, &facade.UserLogon)
 	client.Config(facade.Login, rpcServerAddr, &facade.UserLogin)
 	client.Config(facade.Query, rpcServerAddr, &facade.UserQuery)
+	client.Config(facade.QueryToken, rpcServerAddr, &facade.UserQueryByToken)
 	client.Config(facade.UpdateNick, rpcServerAddr, &facade.UserUpdateNick)
 	client.Config(facade.UpdateProfile, rpcServerAddr, &facade.UserUpdateProfile)
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"git.garena.com/zhenrong.zeng/entrytask/internal/facade"
 	"github.com/sirupsen/logrus"
@@ -54,18 +55,19 @@ func Logon(request *facade.UserLogonRequest) (username string, err int) {
 // err:  	异常，0-成功，1-账号不存在，2-密码错误
 func Login(request *facade.UserLoginRequest) (user facade.User, token string, err int) {
 	// 校验账号密码是否正确
-	ch := make(chan string)
-	go selectPassword(request.Password, ch)
 	// if not exist, query from db, and refresh into redis
 	userT, daoErr := queryUserByUsername(request.Username)
 	if daoErr != nil {
 		logrus.Warnf("query user from db by username:%s failure, msg:%v \n", request.Username, err)
 		return facade.User{}, "", 1
 	}
-	encoded := <- ch
-	if encoded != request.Password {	// 密码不正确
+	encoded := selectPassword(request.Password)
+	logrus.Infof("request password:%s, password in db:%s", encoded, userT.Password)
+	if strings.Compare(encoded, userT.Password) != 0 {	// 密码不正确
+		logrus.Warnf("login failure")
 		return facade.User{}, "", 2
 	}
+	logrus.Infof("login success")
 	token = generateToken(request.Username)
 	go cacheTokenForUser(token, userT.Username)
 	return *userConvert(*userT), token, 0
@@ -109,6 +111,7 @@ func UpdateUserProfile(request *facade.UserUpdateRequest) (user facade.User, err
 	if errQuery != 0 { // 未找到
 		return facade.User{}, 2
 	}
+	user.ProfilePath = request.ProfilePath
 	go cacheUserInfoIntoRedis(user)
 	return user, 0
 }
@@ -129,6 +132,7 @@ func UpdateUserNick(request *facade.UserUpdateRequest) (user facade.User, err in
 	if errQuery != 0 { // 未找到
 		return facade.User{}, 2
 	}
+	user.Nickname = request.Nickname
 	go cacheUserInfoIntoRedis(user)
 	return user, 0
 }
@@ -159,7 +163,7 @@ func keyUserToken(token string) string {
 func cacheUserInfoIntoRedis(user facade.User) {
 	// set into redis
 	key := userInfoCacheKey(user.Username)
-	redisClient.HMSet(key, *userInfo2Map(user))
+	redisClient.HMSet(key, userInfo2Map(user))
 	redisClient.Expire(key, 30*time.Minute)
 	logrus.Debugf("cached user:%v", user)
 }
@@ -193,13 +197,13 @@ func queryUserInfoFromRedis(username string) (user *facade.User, err error) {
 var userFields = []string{"id", "un", "nn", "pp"}
 
 // userInfo2Map 将用户对象转化成map(serialize in redis)
-func userInfo2Map(user facade.User) *map[string]interface{} {
+func userInfo2Map(user facade.User) map[string]interface{} {
 	userMap := make(map[string]interface{})
 	userMap["id"] = user.Id
 	userMap["un"] = user.Username
 	userMap["nn"] = user.Nickname
 	userMap["pp"] = user.ProfilePath
-	return &userMap
+	return userMap
 }
 
 // userInfoCacheKey user info key in redis
@@ -215,6 +219,7 @@ func userConvert(userT TUser) *facade.User {
 func generateToken(username string) string {
 	timestamp := time.Now().Format(time.RFC3339)
 	mux := timestamp + strconv.Itoa(rand.Int()) + username
-	bs := md5.Sum([]byte(mux))
-	return strings.ToUpper(Bytes2String(bs[:]))
+	h := md5.New()
+	h.Write([]byte(mux))
+	return strings.ToUpper(hex.EncodeToString(h.Sum(nil)))
 }

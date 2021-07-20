@@ -1,8 +1,6 @@
 package router
 
 import (
-	"crypto/md5"
-	"fmt"
 	"git.garena.com/zhenrong.zeng/entrytask/internal/facade"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -13,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unsafe"
 )
 
 type Response struct {
@@ -81,8 +78,6 @@ func login(c *gin.Context) {
 	user, token, bizErr := facade.UserLogin(&request)
 	if bizErr == 0 {
 		// success
-		c.Header("token", token)	// todo: generate token
-
 		fillProfilePrefix(user)	// fillProfilePrefix
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
@@ -180,13 +175,20 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 		return "", ""
 	}
 	filename := header.Filename
+	suffix := filename[strings.LastIndex(filename, "."):]
 	logrus.Infof("get file:%s", filename)
 	buf := make([]byte, 0, header.Size)
 	size, err := file.Read(buf)
-	fmt.Printf("file header size:%d, buf size:%d, buf len:%d", header.Size, size, len(buf))
-	sumByte := md5.Sum(buf)
-	sum := *(*string)(unsafe.Pointer(&sumByte))
-	pathAppend := "/profile/" + strconv.Itoa(time.Now().Year()) + sum
+	if err != nil {
+		logrus.Errorf("file to bytes err:%v, size:%v", err, size)
+		c.JSON(http.StatusBadRequest, Response{
+			Code: 0,
+			Msg: "file not valid",
+		})
+		return "", ""
+	}
+	sum := Md5(buf)
+	pathAppend := "/profile/" + strconv.Itoa(time.Now().Year()) + sum + suffix
 	var path = profilePath + pathAppend
 	out, err := os.Create(path)
 	defer func(file multipart.File) {
@@ -209,9 +211,15 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 func profileUpdate(c *gin.Context) {
 	token := c.GetHeader("token")
 	if token == "" {
-
+		notLogin(c)
+		return
 	}
-	username := c.DefaultPostForm("username", "")
+	user, bizErr := facade.UserQueryByToken(token)
+	if bizErr != 0 {
+		notLogin(c)
+		return
+	}
+	username := user.Username
 	profile, url := storageUploadFile(c)
 	if profile == "" {
 		// file storage failure
@@ -227,17 +235,17 @@ func profileUpdate(c *gin.Context) {
 		Username: username,
 		ProfilePath: profile,
 	}
-	user, bizErr := facade.UserUpdateProfile(&request)
-	if bizErr == 0 {
+	userNew, bizErrUpdate := facade.UserUpdateProfile(&request)
+	if bizErrUpdate == 0 {
 		// success
-		fillProfilePrefix(user)
+		fillProfilePrefix(userNew)
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
 			Msg: "success",
-			Data: user,
+			Data: userNew,
 		})
 		return
-	} else if bizErr == 2 {
+	} else if bizErrUpdate == 2 {
 		// user not exists
 		c.JSON(http.StatusOK, Response{
 			Code: 2,
@@ -255,24 +263,41 @@ func profileUpdate(c *gin.Context) {
 
 // nickUpdate 修改用户昵称
 func nickUpdate(c *gin.Context) {
-	username := c.DefaultPostForm("username", "")
+	token := c.GetHeader("token")
+	if token == "" {
+		notLogin(c)
+		return
+	}
+	user, bizErr := facade.UserQueryByToken(token)
+	if bizErr != 0 {
+		notLogin(c)
+		return
+	}
+	username := user.Username
 	nickname := c.DefaultPostForm("nickname", "")
 	// todo: param check
+	if nickname == "" {
+		c.JSON(http.StatusOK, Response{
+			Code: 3,
+			Msg: "bad request",
+		})
+		return
+	}
 	request := facade.UserUpdateRequest{
 		Username: username,
 		Nickname: nickname,
 	}
-	user, bizErr := facade.UserUpdateNick(&request)
-	if bizErr == 0 {
+	userNew, bizErrUpdate := facade.UserUpdateNick(&request)
+	if bizErrUpdate == 0 {
 		// success
-		fillProfilePrefix(user)
+		fillProfilePrefix(userNew)
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
 			Msg: "success",
-			Data: user,
+			Data: userNew,
 		})
 		return
-	} else if bizErr == 2 {
+	} else if bizErrUpdate == 2 {
 		// user not exists
 		c.JSON(http.StatusOK, Response{
 			Code: 2,

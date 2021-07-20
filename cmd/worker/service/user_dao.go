@@ -53,24 +53,23 @@ func insertUser(request facade.UserLogonRequest) (int, error) {
 }
 
 // selectPassword mysql密码加密
-func selectPassword(passwd string, ch chan string) {
+func selectPassword(passwd string) string {
 	rows, err := mysqlDB.Queryx(sqlSelectPassword, passwd)
 	if err != nil {
 		logrus.Errorf("select password err:%v", err)
-		ch <- ""
-		return
+		return ""
 	}
 	defer rows.Close()
 	if rows.Next() {
 		var encoded string
 		err := rows.Scan(&encoded)
 		if err == nil {
-			ch <- encoded
-			return
+			logrus.Infof("password:%s", encoded)
+			return encoded
 		}
 	}
 	logrus.Errorf("scan result err:%v ", err)
-	ch <- ""
+	return ""
 }
 
 // queryUserByUsername 根据username查询用户信息
@@ -88,7 +87,7 @@ func queryUserByUsername(username string) (*TUser, error) {
 		if errMapper != nil {
 			return nil, fmt.Errorf("query user:%s result mapper err:%v", username, errMapper)
 		}
-		logrus.Infof("query user:%s by username, get:%v ", username, user)
+		logrus.Debugf("query user:%s by username, get:%v ", username, user)
 		return &user, nil
 	} else {
 		return nil, fmt.Errorf("query user:%s not exists", username)

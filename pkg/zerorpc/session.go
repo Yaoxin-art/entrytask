@@ -50,7 +50,6 @@ func (s *Session) Read() ([]byte, error) {
 		//logrus.Errorf("read data length from addr:%s err:%v", s.remoteAddr, errReadHead)
 		return nil, errReadHead
 	}
-	logrus.Infof("read head size:%d", topSizeOfInt)
 
 	dataLen := binary.BigEndian.Uint32(topSizeOfInt)
 	data := make([]byte, dataLen)
