@@ -12,8 +12,8 @@ import (
 // case 1：存在的用户查询
 func TestQueryUserByUsername1(t *testing.T) {
 	username := "zero1234"
-	user, err := QueryUserByUsername(username)
-	if err != nil {
+	user, err := QueryByUsername(username)
+	if err != 0 {
 		t.Errorf("query user:%s empty, err:%v", username, err)
 	}
 	t.Logf("query user:%s success, user:%v", username, user)
@@ -23,8 +23,8 @@ func TestQueryUserByUsername1(t *testing.T) {
 // case 2：不存在的用户查询
 func TestQueryUserByUsername2(t *testing.T) {
 	username := "zero.not.exist"
-	_, err := QueryUserByUsername(username)
-	if err == nil {
+	_, err := QueryByUsername(username)
+	if err == 0 {
 		t.Errorf("query user:%s case:2 test failure", username)
 	}
 	t.Logf("query user:%s case:2 success", username)
@@ -43,9 +43,9 @@ func TestRegisterUser1(t *testing.T) {
 	nickname := "zero No." + ctime
 	password := "123456"
 	user := facade.UserLogonRequest{Username: username, Nickname: nickname, Password: password}
-	code, err := RegisterUser(user)
-	if err != nil || code != 1 {
-		t.Errorf("register user:%v failure, code:%d", user, code)
+	name, err := Logon(user)
+	if err != 0 || name == "" {
+		t.Errorf("register user:%v failure, name:%s", user, name)
 	}
 	t.Logf("register user:%v success", user)
 }
@@ -58,26 +58,38 @@ func TestRegisterUser2(t *testing.T) {
 	nickname := "zero No.1234"
 	password := "123456"
 	user := facade.UserLogonRequest{Username: username, Nickname: nickname, Password: password}
-	code, err := RegisterUser(user)
-	if err == nil {
-		t.Errorf("register user:%v case:2 test failure, code:%d", user, code)
+	_, err := Logon(user)
+	if err == 0 {
+		t.Errorf("register user:%v case:2 test failure, code:%d", user, err)
 	}
-	if code != 2 {
-		t.Errorf("register duplicate user:%v case test should throw \"Duplicate entry 'zero1234' for key 't_user.unique_idx_username'\", and code should be 2, but got:%d", user, code)
+	if err != 1 {
+		t.Errorf("register duplicate user:%v case test should throw \"Duplicate entry 'zero1234' for key 't_user.unique_idx_username'\", and code should be 2, but got:%d", user, err)
 	}
 	t.Logf("register user:%v case:2 success, msg:%v", user, err)
+}
+
+// todo
+func TestLogin(t *testing.T) {
+	request := facade.UserLoginRequest{Username: "zero1234", Password: "123456"}
+	user, err := Login(request)
+	if err == 0 {
+		t.Logf("login success, user:%v", user)
+	} else {
+		t.Errorf("login failure, should err=0, but got:%d", err)
+	}
 }
 
 // TestUpdateUserNick 测试更新用户昵称
 // case 1：正常请求
 func TestUpdateUserNick1(t *testing.T) {
-	time.Sleep(2 * time.Second)	// 睡眠2秒，用于update profile 测试用例时间差
+	time.Sleep(2 * time.Second) // 睡眠2秒，用于update profile 测试用例时间差
 	request := facade.UserUpdateRequest{Username: "zero1234", Nickname: "zero No.1234"}
 	user, err := UpdateUserNick(request)
-	if err != nil {
-		t.Errorf("update user nickname case:1 test faliure, err:%v", err)
+	if err == 0 {
+		t.Logf("update user nickname case:1 test success, updated user:%v", user)
+	} else {
+		t.Errorf("update user nickname case:1 test faliure, should err=0, but got:%d", err)
 	}
-	t.Logf("update user nickname case:1 test success, updated user:%v", *user)
 }
 
 // TestUpdateUserNick 测试更新用户昵称
@@ -85,10 +97,11 @@ func TestUpdateUserNick1(t *testing.T) {
 func TestUpdateUserNick2(t *testing.T) {
 	request := facade.UserUpdateRequest{Username: "zero.not.exist", Nickname: "zero No.1234"}
 	_, err := UpdateUserNick(request)
-	if err == nil {
-		t.Errorf("update user nickname case:2 test faliure, err:%v", err)
+	if err == 2 {
+		t.Log("update user nickname case:2 test success")
+	} else {
+		t.Errorf("update user nickname case:2 test failure, should out err=2 but got:%d", err)
 	}
-	t.Logf("update user nickname case:2 test success, msg:%v", err)
 }
 
 // TestUpdateUserNick 测试更新用户昵称
@@ -96,22 +109,24 @@ func TestUpdateUserNick2(t *testing.T) {
 func TestUpdateUserNick3(t *testing.T) {
 	request := facade.UserUpdateRequest{Username: "zero1234"}
 	_, err := UpdateUserNick(request)
-	if err == nil {
-		t.Errorf("update user nickname case:3 test faliure, err:%v", err)
+	if err == 1 {
+		t.Log("update user nickname case:3 test success")
+	} else {
+		t.Errorf("update user nickname case:3 test failure, shold out err=1 but got:%d", err)
 	}
-	t.Logf("update user nickname case:3 test success, msg:%v", err)
 }
 
 // TestUpdateUserProfile 测试更新用户头像
 // case 1：正常请求
 func TestUpdateUserProfile1(t *testing.T) {
-	time.Sleep(2 * time.Second)	// 睡眠2秒，用于update nickname 测试用例时间差
+	time.Sleep(2 * time.Second) // 睡眠2秒，用于update nickname 测试用例时间差
 	request := facade.UserUpdateRequest{Username: "zero1234", ProfilePath: "/profile/default.jpg"}
 	user, err := UpdateUserProfile(request)
-	if err != nil {
-		t.Errorf("update user profile case:1 test faliure, err:%v", err)
+	if err == 0 {
+		t.Logf("update user profile case:1 test success, updated user:%v", user)
+	} else {
+		t.Errorf("update user profile case:1 test faliure, should err=0, but got:%d", err)
 	}
-	t.Logf("update user profile case:1 test success, updated user:%v", *user)
 }
 
 // TestUpdateUserProfile 测试更新用户头像
@@ -119,10 +134,11 @@ func TestUpdateUserProfile1(t *testing.T) {
 func TestUpdateUserProfile2(t *testing.T) {
 	request := facade.UserUpdateRequest{Username: "zero_not_exist", ProfilePath: "/profile/avatar.jpg"}
 	_, err := UpdateUserProfile(request)
-	if err == nil {
-		t.Errorf("update user profile case:2 test faliure")
+	if err == 2 {
+		t.Log("update user profile case:2 test success")
+	} else {
+		t.Errorf("update user profile case:2 test failure, should out err=2 but got:%d", err)
 	}
-	t.Logf("update user profile case:2 test success, should out msg:%v", err)
 }
 
 // TestUpdateUserProfile 测试更新用户头像
@@ -130,23 +146,9 @@ func TestUpdateUserProfile2(t *testing.T) {
 func TestUpdateUserProfile3(t *testing.T) {
 	request := facade.UserUpdateRequest{Username: "zero1234", ProfilePath: ""}
 	_, err := UpdateUserProfile(request)
-	if err == nil { // should not be null
-		t.Errorf("update user profile case:3 failure test faliure")
+	if err == 1 {
+		t.Log("update user profile case:3 test success")
+	} else {
+		t.Errorf("update user profile case:3 test failure, shold out err=1 but got:%d", err)
 	}
-	t.Logf("update user profile case:3 test success, should out msg:%v", err)
-}
-
-// TestPrepareUser 准备用户数据
-func TestPrepareUser(t *testing.T) {
-	if 1 > 2 {
-		t.Logf("ignore")
-		return
-	}
-	start := time.Now().Second()
-	size := 10000000
-	for i := 0 ; i < size; i++ {
-		TestRegisterUser1(t)
-	}
-	end := time.Now().Second()
-	t.Logf("init %d users, spent %d seconds", size, end - start)
 }

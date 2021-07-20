@@ -30,6 +30,7 @@ func insertUser(request facade.UserLogonRequest) (int, error) {
 	result, err := mysqlDB.Exec(sqlInsertUser, request.Username, request.Nickname, request.Password)
 	if err != nil {
 		// eg: Duplicate entry 'xxx' for key 't_user.unique_idx_username'
+		logrus.Warnf("insert user err:%v, request:%s", err, request)
 		return 0, err
 	}
 	rows, err := result.RowsAffected()

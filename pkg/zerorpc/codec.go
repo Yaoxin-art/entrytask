@@ -3,31 +3,54 @@ package zerorpc
 import (
 	"bytes"
 	"encoding/gob"
+	"github.com/sirupsen/logrus"
 )
 
-type RpcData struct {
-	Name string
-	Args []interface{}
+type Invocation struct {
+	MethodId string
+	Args     []interface{}
 }
 
-func encode(data RpcData) ([]byte, error) {
+type Result struct {
+	StatusCode        int           // status code, 1-success,404-method not exists,0-error
+	RequestTimestamp  int64         // get request timestamp
+	ResponseTimestamp int64         // out response timestamp
+	Err               string        // error if exists
+	Args              []interface{} // response body
+}
+
+// encode encode zerorpc invocation data
+func encode(data interface{}) ([]byte, error) {
 	var buf bytes.Buffer
-	bufEnc := gob.NewEncoder(&buf)
-
-	//bufEnc.Encode(data)
-
-	if err := bufEnc.Encode(data); err != nil {
+	bufEncoded := gob.NewEncoder(&buf)
+	err := bufEncoded.Encode(data)
+	if err != nil {
+		logrus.Errorf("encode invocation data err:%v", err)
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func decode(bs []byte) (RpcData, error) {
-	buf := bytes.NewBuffer(bs)
-	bufDec := gob.NewDecoder(buf)
-	var data RpcData
-	if err := bufDec.Decode(&data); err != nil {
-		return data, err
+// decodeInvocation decode zerorpc invocation request
+func decodeInvocation(data []byte) (*Invocation, error) {
+	buf := bytes.NewBuffer(data)
+	bufDecode := gob.NewDecoder(buf)
+	var invocation Invocation
+	err := bufDecode.Decode(&invocation)
+	if err != nil {
+		return nil, err
 	}
-	return data, nil
+	return &invocation, nil
+}
+
+// decodeResult decode zerorpc invocation response
+func decodeResult(data []byte) (*Result, error) {
+	buf := bytes.NewBuffer(data)
+	bufDecode := gob.NewDecoder(buf)
+	var result Result
+	err := bufDecode.Decode(&result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }

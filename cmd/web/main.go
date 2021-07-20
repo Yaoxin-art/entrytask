@@ -1,49 +1,55 @@
 package main
 
 import (
-	"flag"
-	"git.garena.com/zhenrong.zeng/entrytask/internal/web/router"
-	"github.com/gin-gonic/gin"
+	"git.garena.com/zhenrong.zeng/entrytask/cmd/web/router"
+	"git.garena.com/zhenrong.zeng/entrytask/pkg/zerorpc"
+	_ "github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"os"
-	"regexp"
+	"os/signal"
+	"path"
+	"runtime"
+	"time"
 )
 
-const (
-	DefaultPort = ":7777"
-)
-
-var (
-	port       string
-	env        string
-	HttpEngine *gin.Engine
-)
-
-func init() {
-	// config
-	flag.StringVar(&port, "port", DefaultPort, "Http port, like ':7777'")
-	flag.Parse()
-	validConf()
-
+func initLog() {
 	//设置输出样式，自带的只有两种样式logrus.JSONFormatter{}和logrus.TextFormatter{}
-	logrus.SetFormatter(&logrus.TextFormatter{})
+	logrus.SetFormatter(&logrus.TextFormatter{
+		TimestampFormat: time.RFC3339,
+		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+			return frame.Function, path.Base(frame.File)
+		},
+	})
 	//设置output,默认为stderr,可以为任何io.Writer，比如文件*os.File
 	logrus.SetOutput(os.Stdout)
 	//设置最低loglevel
 	logrus.SetLevel(logrus.InfoLevel)
+	//
+	logrus.SetReportCaller(true)
 }
 
-func validConf() {
-	matchPort, _ := regexp.MatchString("(^\\:\\d+)", port)
-	if !matchPort {
-		port = DefaultPort
-		logrus.Warnf("Invalid port config, set with default: %s", DefaultPort)
-	}
-}
+var (
+	httpPort		= ":7777"
+	rpcServerAddr	= "127.0.0.1:9999"
+)
+var client *zerorpc.Client
 
 func main() {
-	httpServer := router.InitGin()
-	logrus.Infof("web app started, listen at:%s", port)
-	// listen and serve on 0.0.0.0:7777 (default "localhost:7777")
-	httpServer.Run(port)
+	initLog()
+
+	client = zerorpc.NewClient()	// init rpc client instance
+	configRPC()						// config for rpc client
+
+	httpServer := router.InitGin()	// init http server with gin
+	go httpServer.Run(httpPort)		// listen and serve on 0.0.0.0:7777
+
+	logrus.Infof("web app started, listen at:%s", httpPort)
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	for {
+		<-c
+		logrus.Info("web app graceful shutdown...")
+		return
+	}
 }

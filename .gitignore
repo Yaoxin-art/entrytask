@@ -1,6 +1,7 @@
 # temp file
 *.lock
 *.tmp
+.DS_Store
 *.swp
 *.log
 *.out

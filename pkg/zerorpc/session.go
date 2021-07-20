@@ -2,40 +2,72 @@ package zerorpc
 
 import (
 	"encoding/binary"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net"
+	"strings"
 )
 
 type Session struct {
-	conn net.Conn
+	conn       net.Conn
+	remoteAddr interface{}
 }
 
+const sizeOfInt = 4
+
+// NewSession 确认一个会话
 func NewSession(conn net.Conn) *Session {
-	return &Session{conn}
+	return &Session{conn: conn, remoteAddr: conn.RemoteAddr()}
 }
 
-func (s Session) Write(data []byte) error {
-	buf := make([]byte, 4+len(data))
+// Write write to remote
+func (s *Session) Write(data []byte) error {
+	// 前一个字节放置当前数据的大小
+	buf := make([]byte, sizeOfInt+len(data))
+	// 计算data的大小，并赋值到最前面
 	binary.BigEndian.PutUint32(buf[:4], uint32(len(data)))
-	copy(buf[:4], data)
+	copy(buf[4:], data)
 	_, err := s.conn.Write(buf)
 	if err != nil {
+		if strings.Contains(err.Error(), "broken pipe") {
+			return nil
+		}
+		logrus.Errorf("write data to:%s err:%v", s.remoteAddr, err)
 		return err
 	}
+	logrus.Debugf("write data to:%s success, length:%d", s.remoteAddr, len(buf))
 	return nil
 }
 
-func (s Session) Read() ([]byte, error) {
-	header := make([]byte, 4)
-	_, errHeader := io.ReadFull(s.conn, header)
-	if errHeader != nil {
-		return nil, errHeader
+// Read read from remote
+func (s *Session) Read() ([]byte, error) {
+	topSizeOfInt := make([]byte, sizeOfInt)
+	_, errReadHead := io.ReadFull(s.conn, topSizeOfInt)
+	if errReadHead != nil {
+		//if errReadHead.Error() == "EOF" || strings.Contains(errReadHead.Error(), "connect reset by peer") {	// ignore
+		//	return nil, errReadHead
+		//}
+		//logrus.Errorf("read data length from addr:%s err:%v", s.remoteAddr, errReadHead)
+		return nil, errReadHead
 	}
-	dataLen := binary.BigEndian.Uint32(header)
+	logrus.Infof("read head size:%d", topSizeOfInt)
+
+	dataLen := binary.BigEndian.Uint32(topSizeOfInt)
 	data := make([]byte, dataLen)
-	_, errData := io.ReadFull(s.conn, data)
-	if errData != nil {
-		return nil, errData
+	_, errReadData := io.ReadFull(s.conn, data)
+	if errReadData != nil {
+		logrus.Errorf("read data from addr:%s err:%v", s.remoteAddr, errReadData)
+		return nil, errReadData
 	}
+	logrus.Debugf("read data from addr:%s success, length:%d", s.remoteAddr, dataLen)
 	return data, nil
+}
+
+func (s *Session) Close() {
+	err := s.conn.Close()
+	if err != nil {
+		logrus.Errorf("session close err:%v, remote addr:%v", err, s.remoteAddr)
+	} else {
+		logrus.Infof("session closed, remote addr:%s", s.remoteAddr)
+	}
 }
