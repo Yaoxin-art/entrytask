@@ -8,8 +8,8 @@ import (
 )
 
 func TestInitGin(t *testing.T) {
-	InitGin()
-	ts := httptest.NewServer(HttpEngine)
+	engine := InitGin()
+	ts := httptest.NewServer(engine)
 	// shutdown
 	defer ts.Close()
 

@@ -2,7 +2,11 @@ package router
 
 import "fmt"
 
-func checkLoginParam(username, password string) error {
+// 以J
+var strictStrRegex = "^[a-zA-Z][\\w]{5,19}$"
+var strictStrRegexAllowBlank = "^[a-zA-Z][\\w ]{5,19}(^ )$"
+
+func checkLogonParam(username, nickname, password string) error {
 	if username == "" {
 		return fmt.Errorf("username is empty")
 	}

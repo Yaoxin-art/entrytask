@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 func main() {
@@ -10,6 +12,25 @@ func main() {
 	practiceSelectChan()
 
 	practiceReflect()
+
+	mysqlPassword("123456")
+}
+
+
+// mysqlPassword mysql password encrypt
+// '*' + UPPER(SHA1(UNHEX(SHA1(word))))
+func mysqlPassword(password string) string {
+	h := sha1.New()
+	h.Write([]byte(password))
+	bs := h.Sum(nil)
+	fmt.Println(string(bs))
+	bss := string(bs)
+	h = sha1.New()
+	h.Write([]byte(bss))
+	cs := h.Sum(nil)
+	css := string(cs)
+	fmt.Printf("css upper:%s", strings.ToUpper(css))
+	return string(bs)
 }
 
 func practiceReflect() {

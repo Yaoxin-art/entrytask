@@ -31,6 +31,7 @@ func initLog() {
 var (
 	httpPort		= ":7777"
 	rpcServerAddr	= "127.0.0.1:9999"
+
 )
 var client *zerorpc.Client
 

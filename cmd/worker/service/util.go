@@ -3,9 +3,11 @@ package service
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha1"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"unsafe"
 )
 
@@ -51,4 +53,15 @@ func Str2Bytes(s string) []byte {
 
 func Bytes2String(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
+}
+
+// mysqlPassword mysql password encrypt
+// '*' + UPPER(SHA1(UNHEX(SHA1(word))))
+func mysqlPassword(password string) string {
+	h := sha1.New()
+	h.Write([]byte(password))
+	bs := h.Sum(nil)
+	fmt.Println(string(bs))
+
+	return string(bs)
 }

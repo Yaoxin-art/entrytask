@@ -32,25 +32,25 @@ func encode(data interface{}) ([]byte, error) {
 }
 
 // decodeInvocation decode zerorpc invocation request
-func decodeInvocation(data []byte) (*Invocation, error) {
+func decodeInvocation(data []byte) (Invocation, error) {
 	buf := bytes.NewBuffer(data)
 	bufDecode := gob.NewDecoder(buf)
 	var invocation Invocation
 	err := bufDecode.Decode(&invocation)
 	if err != nil {
-		return nil, err
+		return Invocation{}, err
 	}
-	return &invocation, nil
+	return invocation, nil
 }
 
 // decodeResult decode zerorpc invocation response
-func decodeResult(data []byte) (*Result, error) {
+func decodeResult(data []byte) (Result, error) {
 	buf := bytes.NewBuffer(data)
 	bufDecode := gob.NewDecoder(buf)
 	var result Result
 	err := bufDecode.Decode(&result)
 	if err != nil {
-		return nil, err
+		return Result{}, err
 	}
-	return &result, nil
+	return result, nil
 }

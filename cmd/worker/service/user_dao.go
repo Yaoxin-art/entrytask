@@ -18,11 +18,16 @@ type TUser struct {
 var sqlInsertUser = `INSERT INTO t_user(username, nickname, passwd, created_timestamp, modified_timestamp) 
 	VALUES(?, ?, CONCAT('*', UPPER(SHA1(UNHEX(SHA1(?))))), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`
 
+// update profile
 var sqlUpdateProfile = ` UPDATE t_user SET profile_path=?, modified_timestamp=CURRENT_TIMESTAMP WHERE username=? `
 
+// update nickname
 var sqlUpdateNickname = ` UPDATE t_user SET nickname=?, modified_timestamp=CURRENT_TIMESTAMP WHERE username=? `
 
+// select by username
 var sqlSelectByUsername = ` SELECT id,username,nickname,passwd,profile_path FROM t_user WHERE username=? LIMIT 1 `
+
+var sqlSelectPassword = ` SELECT CONCAT('*', UPPER(SHA1(UNHEX(SHA1(?))))) `
 
 // insertUser 插入用户记录
 // return 返回状态码，1-成功，0-失败
@@ -47,6 +52,27 @@ func insertUser(request facade.UserLogonRequest) (int, error) {
 	return 1, nil
 }
 
+// selectPassword mysql密码加密
+func selectPassword(passwd string, ch chan string) {
+	rows, err := mysqlDB.Queryx(sqlSelectPassword, passwd)
+	if err != nil {
+		logrus.Errorf("select password err:%v", err)
+		ch <- ""
+		return
+	}
+	defer rows.Close()
+	if rows.Next() {
+		var encoded string
+		err := rows.Scan(&encoded)
+		if err == nil {
+			ch <- encoded
+			return
+		}
+	}
+	logrus.Errorf("scan result err:%v ", err)
+	ch <- ""
+}
+
 // queryUserByUsername 根据username查询用户信息
 func queryUserByUsername(username string) (*TUser, error) {
 	rows, err := mysqlDB.Queryx(sqlSelectByUsername, username)
@@ -54,6 +80,7 @@ func queryUserByUsername(username string) (*TUser, error) {
 		logrus.Errorf("query user by username:%s err:%v", username, err)
 		return nil, fmt.Errorf("username:%s not exists", username)
 	}
+	defer rows.Close()
 	// SQL限定只返回一行
 	var user TUser
 	if rows.Next() {

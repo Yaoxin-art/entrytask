@@ -11,6 +11,7 @@ func initRouter(engine *gin.Engine) {
 	engine.POST("/user/logout", logout)
 	engine.GET("/user/info", info)
 	engine.GET("/user/find", findByUsername)
+
 	engine.POST("/user/profile", profileUpdate)
 	engine.GET("/user/nick", nickUpdate)
 	engine.GET("/ping", ping)
