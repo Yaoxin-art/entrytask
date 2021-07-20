@@ -27,13 +27,13 @@ func QueryByToken(token string) (user facade.User, err int) {
 // return username string, err facade.BizError
 // username:	注册成功后的用户名（如果传入的用户名带有前或后空格，则会去除空格后再注册并返回）
 // err: 		异常，0-成功，1-用户名已存在，2-参数不符合要求
-func Logon(request facade.UserLogonRequest) (username string, err int) {
+func Logon(request *facade.UserLogonRequest) (username string, err int) {
 	if request.Username == "" || request.Nickname == "" || request.Password == "" {
 		// todo: 校验字段长度和字符规范
 		return "", 2
 	}
 	// insert user
-	_, errInsert := insertUser(request)
+	_, errInsert := insertUser(*request)
 	if errInsert != nil {
 		// failure
 		return "", 1
@@ -52,7 +52,7 @@ func Logon(request facade.UserLogonRequest) (username string, err int) {
 // user: 	成功则返回用户信息
 // token:	登录成功之后返回token
 // err:  	异常，0-成功，1-账号不存在，2-密码错误
-func Login(request facade.UserLoginRequest) (user facade.User, token string, err int) {
+func Login(request *facade.UserLoginRequest) (user facade.User, token string, err int) {
 	// 校验账号密码是否正确
 	ch := make(chan string)
 	go selectPassword(request.Password, ch)
@@ -97,11 +97,11 @@ func QueryByUsername(username string) (facade.User, int) {
 // return user facade.User，err facade.BizError
 // user:	成功则返回更新后的用户信息
 // err:		异常，0-成功，1-参数异常，2-用户名不存在
-func UpdateUserProfile(request facade.UserUpdateRequest) (user facade.User, err int) {
+func UpdateUserProfile(request *facade.UserUpdateRequest) (user facade.User, err int) {
 	if request.ProfilePath == "" || request.Username == "" {
 		return facade.User{}, 1
 	}
-	code, errUpdate := updateUserProfile(request)
+	code, errUpdate := updateUserProfile(*request)
 	if errUpdate != nil || code != 1 {
 		return facade.User{}, 2
 	}
@@ -117,11 +117,11 @@ func UpdateUserProfile(request facade.UserUpdateRequest) (user facade.User, err 
 // return user facade.User，err facade.BizError
 // user:	成功则返回更新后的用户信息
 // err:		异常，0-成功，1-参数异常，2-用户名不存在
-func UpdateUserNick(request facade.UserUpdateRequest) (user facade.User, err int) {
+func UpdateUserNick(request *facade.UserUpdateRequest) (user facade.User, err int) {
 	if request.Nickname == "" || request.Username == "" {
 		return facade.User{}, 1
 	}
-	code, errUpdate := updateUserNick(request)
+	code, errUpdate := updateUserNick(*request)
 	if errUpdate != nil || code != 1 {
 		return facade.User{}, 2
 	}

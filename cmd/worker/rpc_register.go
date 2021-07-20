@@ -21,5 +21,5 @@ func registerPojo() {
 	gob.Register(&facade.User{})
 	gob.Register(&facade.UserUpdateRequest{})
 	gob.Register(&facade.UserLogonRequest{})
-	gob.Register(&facade.UserLogonRequest{})
+	gob.Register(&facade.UserLoginRequest{})
 }

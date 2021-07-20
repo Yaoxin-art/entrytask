@@ -46,7 +46,7 @@ func logon(c *gin.Context) {
 		Nickname: nickname,
 		Password: password,
 	}
-	regName, bizErr := facade.UserLogon(request)
+	regName, bizErr := facade.UserLogon(&request)
 	if bizErr == 0 {
 		// success
 		c.JSON(http.StatusOK, Response{
@@ -78,7 +78,7 @@ func login(c *gin.Context) {
 		Username: username,
 		Password: password,
 	}
-	user, token, bizErr := facade.UserLogin(request)
+	user, token, bizErr := facade.UserLogin(&request)
 	if bizErr == 0 {
 		// success
 		c.Header("token", token)	// todo: generate token
@@ -141,6 +141,13 @@ func info(c *gin.Context) {
 // findByUsername 根据username查询用户信息
 func findByUsername(c *gin.Context) {
 	username := c.DefaultQuery("username", "")
+	if username == "" {
+		c.JSON(http.StatusOK, Response{
+			Code: 3,
+			Msg: "request param username is empty",
+		})
+		return
+	}
 	user, bizErr := facade.UserQuery(username)
 	if bizErr == 0 {
 		// success
@@ -220,7 +227,7 @@ func profileUpdate(c *gin.Context) {
 		Username: username,
 		ProfilePath: profile,
 	}
-	user, bizErr := facade.UserUpdateProfile(request)
+	user, bizErr := facade.UserUpdateProfile(&request)
 	if bizErr == 0 {
 		// success
 		fillProfilePrefix(user)
@@ -255,7 +262,7 @@ func nickUpdate(c *gin.Context) {
 		Username: username,
 		Nickname: nickname,
 	}
-	user, bizErr := facade.UserUpdateNick(request)
+	user, bizErr := facade.UserUpdateNick(&request)
 	if bizErr == 0 {
 		// success
 		fillProfilePrefix(user)
@@ -281,7 +288,10 @@ func nickUpdate(c *gin.Context) {
 	}
 }
 
-func fillProfilePrefix(user facade.User) {
+func fillProfilePrefix(user *facade.User) {
+	if user == nil || user.ProfilePath == "" {
+		return
+	}
 	if !strings.HasPrefix(user.ProfilePath, "http") {
 		user.ProfilePath = profileURIPrefix + user.ProfilePath
 	}
