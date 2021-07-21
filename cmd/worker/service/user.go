@@ -26,6 +26,11 @@ func QueryUsernameList(size int) *[]string {
 // user:	用户信息
 // err:		异常，0-存在且成功，1-失败或未找到（无效token或登录已过期）
 func QueryByToken(token string) (user facade.User, err int) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	username := getTokenUsername(token)
 	if username == "" {
 		return facade.User{}, 1
@@ -38,6 +43,11 @@ func QueryByToken(token string) (user facade.User, err int) {
 // username:	注册成功后的用户名（如果传入的用户名带有前或后空格，则会去除空格后再注册并返回）
 // err: 		异常，0-成功，1-用户名已存在，2-参数不符合要求
 func Logon(request *facade.UserLogonRequest) (username string, err int) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	if request.Username == "" || request.Nickname == "" || request.Password == "" {
 		// todo: 校验字段长度和字符规范
 		return "", 2
@@ -63,6 +73,11 @@ func Logon(request *facade.UserLogonRequest) (username string, err int) {
 // token:	登录成功之后返回token
 // err:  	异常，0-成功，1-账号不存在，2-密码错误
 func Login(request *facade.UserLoginRequest) (user facade.User, token string, err int) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	// 校验账号密码是否正确
 	// if not exist, query from db, and refresh into redis
 	userT, daoErr := queryUserByUsername(request.Username)
@@ -71,12 +86,10 @@ func Login(request *facade.UserLoginRequest) (user facade.User, token string, er
 		return facade.User{}, "", 1
 	}
 	encoded := selectPassword(request.Password)
-	logrus.Infof("request password:%s, password in db:%s", encoded, userT.Password)
 	if strings.Compare(encoded, userT.Password) != 0 { // 密码不正确
-		logrus.Warnf("login failure")
+		logrus.Warnf("login failure, username:%s", request.Username)
 		return facade.User{}, "", 2
 	}
-	logrus.Infof("login success")
 	token = generateToken(request.Username)
 	go cacheTokenForUser(token, userT.Username)
 	go cacheUserInfoIntoRedis(*userConvert(*userT))
@@ -88,6 +101,11 @@ func Login(request *facade.UserLoginRequest) (user facade.User, token string, er
 // user: 查询的用户信息
 // err: 0-成功, 1-用户名不存在
 func QueryByUsername(username string) (facade.User, int) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	// query from redis
 	cached, errNegligible := queryUserInfoFromRedis(username)
 	if errNegligible == nil {
@@ -110,6 +128,11 @@ func QueryByUsername(username string) (facade.User, int) {
 // user:	成功则返回更新后的用户信息
 // err:		异常，0-成功，1-参数异常，2-用户名不存在
 func UpdateUserProfile(request *facade.UserUpdateRequest) (user facade.User, err int) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	if request.ProfilePath == "" || request.Username == "" {
 		return facade.User{}, 1
 	}
@@ -131,6 +154,11 @@ func UpdateUserProfile(request *facade.UserUpdateRequest) (user facade.User, err
 // user:	成功则返回更新后的用户信息
 // err:		异常，0-成功，1-参数异常，2-用户名不存在
 func UpdateUserNick(request *facade.UserUpdateRequest) (user facade.User, err int) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	if request.Nickname == "" || request.Username == "" {
 		return facade.User{}, 1
 	}

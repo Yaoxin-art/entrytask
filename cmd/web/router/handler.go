@@ -34,6 +34,11 @@ func ping(c *gin.Context) {
 
 // logon 用户注册
 func logon(c *gin.Context) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	// todo: check param
 	request := facade.UserLogonRequest{}
 	err := c.BindJSON(&request)
@@ -71,6 +76,11 @@ func logon(c *gin.Context) {
 // login 用户登录
 // code: 1-成功，2-密码错误，3-用户名不存在
 func login(c *gin.Context) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	request := facade.UserLoginRequest{}
 	err := c.BindJSON(&request)
 	if err != nil {
@@ -125,6 +135,11 @@ func logout(c *gin.Context) {
 // info 已登录用户查询用户信息
 // code: 1-成功，0-未登录
 func info(c *gin.Context) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	token, err := c.Cookie("token")
 	if err != nil || token == "" {
 		notLogin(c)
@@ -152,6 +167,11 @@ func info(c *gin.Context) {
 
 // findByUsername 根据username查询用户信息
 func findByUsername(c *gin.Context) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	username := c.DefaultQuery("username", "")
 	if username == "" {
 		c.JSON(http.StatusOK, Response{
@@ -226,6 +246,11 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 
 // profileUpdate 修改用户头像
 func profileUpdate(c *gin.Context) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	token, err := c.Cookie("token")
 	if err != nil || token == "" {
 		notLogin(c)
@@ -280,6 +305,11 @@ func profileUpdate(c *gin.Context) {
 
 // nickUpdate 修改用户昵称
 func nickUpdate(c *gin.Context) {
+	start := time.Now().UnixNano()
+	defer func() {
+		end := time.Now().UnixNano()
+		logrus.Infof("login spend time:%d ns", end - start)
+	}()
 	token, err := c.Cookie("token")
 	if err != nil || token == "" {
 		notLogin(c)

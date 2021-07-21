@@ -1,20 +1,26 @@
 package router
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
-	"git.garena.com/zhenrong.zeng/entrytask/internal/facade"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
+	"runtime"
 	"testing"
 	"time"
 )
 
 type user struct {
-	username string // 从数据库中获取
-	password string // 当前所有用户密码都为 "123456"
+	Username string `json:"username"` // 从数据库中获取
+	Password string `json:"password"`// 当前所有用户密码都为 "123456"
 }
+
+const httpServerAddr = "http://localhost:7777"
 
 const (
 	clientSize = 200
@@ -25,23 +31,23 @@ var clients []*http.Client
 var users []user
 
 func init() {
-	//initUsers()
-	//initHttpClients()
+	initUsers()
+	initHttpClients()
 }
 
 func initUsers() {
-	names := facade.QueryUsernameList(userSize)
-	if names == nil {
-		fmt.Errorf("init failure for init username list")
+	names, err := selectUsernameList(userSize)
+	if err != nil || names == nil {
+		logrus.Errorf("init failure for init username list")
 		return
 	}
-	for _, name := range *names {
+	for _, name := range names {
 		users = append(users, user{
-			username: name,
-			password: "123456",
+			Username: name,
+			Password: "123456",
 		})
 	}
-	logrus.Infof("init user list success, user list size:%d", len(users))
+	logrus.Infof("init user list success, user list size:%d, users:%v", len(users), users)
 }
 
 func initHttpClients() {
@@ -52,15 +58,82 @@ func initHttpClients() {
 		clients = append(clients, client)
 	}
 }
+func destroyHttpClients() {
+	for _, client := range clients {
+		client.CloseIdleConnections()
+	}
+}
 
 // clientLogin 登录用户，使client具备登录后的token凭证
 func clientLogin(client *http.Client, u user) {
-
+	data, errData := json.Marshal(u)
+	if errData != nil {
+		logrus.Panicf("json error:%v", u)
+		return
+	}
+	var err error
+	logrus.Infof("login user:%v", u)
+	logrus.Infof("login user:%v", string(data))
+	reqUrl := httpServerAddr + "/user/login"
+	req, err := http.NewRequest(http.MethodPost, reqUrl,  bytes.NewBuffer(data))
+	//res, err := client.Post(reqUrl, "application/json", bytes.NewBuffer(data))
+	res, err := client.Do(req)
+	if err != nil {
+		logrus.Errorf("post login err:%v", err)
+	}
+	body, errBody := ioutil.ReadAll(res.Body)
+	if errBody != nil {
+		logrus.Errorf("get body err:%v", err)
+	}
+	logrus.Infof("post login response:%v", string(body[:]))
 }
 
 func BenchmarkLogin(b *testing.B) {
+	defer destroyHttpClients()
+	b.ResetTimer()
+	b.SetParallelism(clientSize / 15)
+	fmt.Printf("parallelism:%d", clientSize / runtime.NumCPU())
+	b.RunParallel(func(pb *testing.PB) {
+		defer func() {
+			logrus.Infof("test ...")
+		}()
+		for pb.Next() {
+			id := rand.Intn(clientSize)
+			client := clients[id]
+			requestUrl := httpServerAddr + "/user/info"
+			req, errReq:= http.NewRequest(http.MethodGet, requestUrl, nil)
+			if errReq != nil {
+				b.Error(errReq)
+				continue
+			}
+			res, errRes := client.Do(req)
+			if errRes != nil {
+				b.Error(errRes)
+				continue
+			}
+			if res.StatusCode != http.StatusOK {
+				resBody, _ := ioutil.ReadAll(res.Body)
+				b.Error(string(resBody))
+				err := res.Body.Close()
+				if err != nil {
+					b.Error(err)
+				}
+				continue
+			}
+			_, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			errRes = res.Body.Close()
+			if errRes != nil {
+				b.Error(errRes)
+			}
 
+		}
+	})
 }
+
 
 func BenchmarkUpdateNick(b *testing.B) {
 	for i := 0; i < b.N; i++ {

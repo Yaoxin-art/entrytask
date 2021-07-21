@@ -39,6 +39,13 @@ EntryTask项目，通过实现RPC通用框架，使用Go HTTP API，MySQL或Redi
 
 部署方案：
     Makefile包含 clean、fmt、vet、cover、test、build、run 功能，使用`make run [web|worker]`启动。
+    启动顺序：
+        启动mysql服务
+        启动redis服务
+        启动nginx
+        启动web模块
+        启动worker模块
+
 
 ## 八、SLA
 
