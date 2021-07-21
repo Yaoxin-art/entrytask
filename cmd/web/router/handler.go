@@ -20,8 +20,8 @@ type Response struct {
 }
 
 var (
-	profilePath      = "/Users/zhenrong.zeng/Workspaces/Data/entrytask"
-	profileURIPrefix = "https://127.0.0.1/entrytask/static" // config at nginx
+	profilePath      = "/Users/zhenrong.zeng/Workspaces/Test/golang/EntryTask/htmls"
+	profileURIPrefix = "http://127.0.0.1" // config at nginx
 )
 
 // ping 服务健康检查
@@ -34,14 +34,16 @@ func ping(c *gin.Context) {
 
 // logon 用户注册
 func logon(c *gin.Context) {
-	username := c.DefaultPostForm("username", "")
-	password := c.DefaultPostForm("password", "")
-	nickname := c.DefaultPostForm("nickname", "")
 	// todo: check param
-	request := facade.UserLogonRequest{
-		Username: username,
-		Nickname: nickname,
-		Password: password,
+	request := facade.UserLogonRequest{}
+	err := c.BindJSON(&request)
+	if err != nil {
+		c.JSON(http.StatusOK, Response{
+			Code: 3,
+			Msg:  "bad request param",
+			Data: "",
+		})
+		return
 	}
 	regName, bizErr := facade.UserLogon(&request)
 	if bizErr == 0 {
@@ -67,18 +69,31 @@ func logon(c *gin.Context) {
 }
 
 // login 用户登录
+// code: 1-成功，2-密码错误，3-用户名不存在
 func login(c *gin.Context) {
-	username := c.DefaultPostForm("username", "")
-	password := c.DefaultPostForm("password", "")
-	// todo: param check
-	request := facade.UserLoginRequest{
-		Username: username,
-		Password: password,
+	request := facade.UserLoginRequest{}
+	err := c.BindJSON(&request)
+	if err != nil {
+		c.JSON(http.StatusOK, Response{
+			Code: 3,
+			Msg:  "bad request param",
+			Data: "",
+		})
+		return
 	}
+	if request.Password == "" || request.Username == "" {
+		c.JSON(http.StatusOK, Response{
+			Code: 3,
+			Msg:  "request param not valid",
+		})
+		return
+	}
+
 	user, token, bizErr := facade.UserLogin(&request)
 	if bizErr == 0 {
 		// success
 		fillProfilePrefix(user) // fillProfilePrefix
+		c.SetCookie("token", token, 1800, "/", "localhost", false, true)	// set cookie
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
 			Msg:  token,
@@ -108,12 +123,14 @@ func logout(c *gin.Context) {
 }
 
 // info 已登录用户查询用户信息
+// code: 1-成功，0-未登录
 func info(c *gin.Context) {
-	token := c.GetHeader("token")
-	if token == "" {
+	token, err := c.Cookie("token")
+	if err != nil || token == ""  {
 		notLogin(c)
 		return
 	}
+	c.Header("Access-Control-Allow-Origin", "localhost")
 	user, bizErr := facade.UserQueryByToken(token)
 	if bizErr == 0 {
 		fillProfilePrefix(user)
@@ -176,19 +193,9 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 	}
 	filename := header.Filename
 	suffix := filename[strings.LastIndex(filename, "."):]
-	logrus.Infof("get file:%s", filename)
-	buf := make([]byte, 0, header.Size)
-	size, err := file.Read(buf)
-	if err != nil {
-		logrus.Errorf("file to bytes err:%v, size:%v", err, size)
-		c.JSON(http.StatusBadRequest, Response{
-			Code: 0,
-			Msg:  "file not valid",
-		})
-		return "", ""
-	}
-	sum := Md5(buf)
-	pathAppend := "/profile/" + strconv.Itoa(time.Now().Year()) + sum + suffix
+
+	sum := Md5UploadFile(file)
+	pathAppend := "/profile/" + strconv.Itoa(time.Now().Year()) + "_" + sum + suffix
 	var path = profilePath + pathAppend
 	out, err := os.Create(path)
 	defer func(file multipart.File) {
@@ -197,10 +204,16 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 			logrus.Errorf("upload file close err:%v", err)
 		}
 	}(file)
+
+	file.Seek(0, 0)	// 重置文件指针
 	_, err = io.Copy(out, file)
 	if err != nil {
-		logrus.Errorf("storage file err:%v", err)
-		return "", ""
+		if os.IsExist(err) {
+			logrus.Errorf("file exist, file name:%s", out.Name())
+		} else {
+			logrus.Errorf("storage file err:%v", err)
+			return "", ""
+		}
 	}
 	logrus.Infof("upload file success, filename:%s, pathAppend:%s, url:%s", filename, pathAppend, profileURIPrefix+pathAppend)
 	// storage success
@@ -209,8 +222,8 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 
 // profileUpdate 修改用户头像
 func profileUpdate(c *gin.Context) {
-	token := c.GetHeader("token")
-	if token == "" {
+	token, err := c.Cookie("token")
+	if err != nil || token == ""  {
 		notLogin(c)
 		return
 	}
@@ -263,8 +276,8 @@ func profileUpdate(c *gin.Context) {
 
 // nickUpdate 修改用户昵称
 func nickUpdate(c *gin.Context) {
-	token := c.GetHeader("token")
-	if token == "" {
+	token, err := c.Cookie("token")
+	if err != nil || token == ""  {
 		notLogin(c)
 		return
 	}
@@ -273,20 +286,26 @@ func nickUpdate(c *gin.Context) {
 		notLogin(c)
 		return
 	}
-	username := user.Username
-	nickname := c.DefaultPostForm("nickname", "")
-	// todo: param check
-	if nickname == "" {
+	request := facade.UserUpdateRequest{}
+	errReq := c.BindJSON(&request)
+	if errReq != nil {
 		c.JSON(http.StatusOK, Response{
 			Code: 3,
-			Msg:  "bad request",
+			Msg:  "bad request param",
+			Data: "",
 		})
 		return
 	}
-	request := facade.UserUpdateRequest{
-		Username: username,
-		Nickname: nickname,
+	request.Username = user.Username
+	// todo: param check
+	if request.Nickname == "" {
+		c.JSON(http.StatusOK, Response{
+			Code: 3,
+			Msg:  "bad request param",
+		})
+		return
 	}
+
 	userNew, bizErrUpdate := facade.UserUpdateNick(&request)
 	if bizErrUpdate == 0 {
 		// success

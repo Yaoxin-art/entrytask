@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <title>Entry Task User HOME</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.6.18/dist/css/uikit.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.6.18/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.6.18/dist/js/uikit-icons.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.bootcss.com/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+</head>
+
+<body >
+<div>
+    <div uk-sticky="media: 960" class="uk-sticky uk-sticky-below uk-sticky-fixed" style="position: fixed; top: 20px; width: 100%;">
+        <div class="uk-navbar-left">
+            <ul class="uk-navbar-nav uk-visible@m uk-position-left">
+                <li class="">
+                </li>
+            </ul>
+        </div>
+        <div class="uk-navbar-right">
+            <ul class="uk-navbar-nav uk-visible@m uk-position-right" style="right: 66px;">
+                <li class="">
+<!--                    <a href="#" class="uk-button uk-button-text" onclick="logout();">SIGN-OUT</a>-->
+                </li>
+            </ul>
+        </div>
+    </div>
+    <ul class="uk-margin">
+        <div class="uk-inline">
+            <img class="current-profile" width="90" height="90" alt="" uk-img>
+        </div>
+        <h3 class="uk-heading-divider uk-heading-bullet current-username"></h3>
+        <h5 class="uk-heading-divider uk-heading-bullet current-nickname"></h5>
+    </ul>
+
+    <div class="uk-margin uk-margin-auto uk-position-relative uk-margin-medium" style="width: 90%;" >
+        <ul class="uk-tab" uk-tab>
+            <li class="uk-active"><a href="#">UPDATE NICK NAME</a></li>
+            <li class=""><a href="#">UPDATE PROFILE</a></li>
+        </ul>
+        <ul class="uk-switcher uk-margin">
+            <!-- update nick name tab -->
+            <li id="update-nick-form" class="">
+                <div class="uk-margin uk-margin-auto">
+                    <form action="">
+                        <div class="uk-margin">
+                            <div class="uk-inline">
+                                <a class="uk-form-icon" href="#" uk-icon="icon: pencil"></a>
+                                <input id="current-nickname" class="uk-input uk-form-width-large" type="text" placeholder="NICKNAME">
+                            </div>
+                        </div>
+                        <div class="uk-margin" uk-margin>
+                            <button id="update-nick-submit" class="uk-button uk-button-primary" onclick="return false;">UPDATE NICKNAME</button>
+                            <ul id="update-nick-spinner"></ul>
+                        </div>
+                    </form>
+                </div>
+            </li>
+
+            <!-- update profile tab -->
+            <li id="upload-profile-form" class="">
+                <div class="uk-margin uk-margin-auto">
+                    <form action="">
+                        <div class="uk-margin">
+                            <div class="uk-inline">
+                                <img class="current-profile" width="90" height="90" alt="" uk-img>
+                            </div>
+                        </div>
+
+                        <div class="uk-margin" uk-margin>
+                            <div uk-form-custom="target: true">
+                                <a class="uk-form-icon" href="#" uk-icon="icon: folder"></a>
+                                <input id="profile" type="file" accept="image/x-png,image/gif,image/jpeg,image/bmp" >
+                                <input class="uk-input uk-form-width-large" type="text" placeholder="SELECT FILE..." disabled>
+                            </div>
+                            <button id="update-profile-submit" class="uk-button uk-button-primary" onclick="return false;">UPDATE PROFILE</button>
+                            <ul id="update-profile-spinner"></ul>
+                        </div>
+
+                    </form>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+
+<script>
+    Date.prototype.Format = function (fmt) {
+        var o = {
+            "M+": this.getMonth() + 1,
+            "d+": this.getDate(),
+            "h+": this.getHours(),
+            "m+": this.getMinutes(),
+            "s+": this.getSeconds(),
+            "q+": Math.floor((this.getMonth() + 3) / 3),
+            "S": this.getMilliseconds()
+        };
+        if (/(y+)/.test(fmt))
+            fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+        for (var k in o)
+            if (new RegExp("(" + k + ")").test(fmt))
+                fmt = fmt.replace(RegExp.$1, (RegExp.$1.length === 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        return fmt;
+    };
+
+    // init for user
+    $(function() {
+        // check is sign
+        check();
+
+        // $("#from").attr("value", new Date(new Date().getTime() - 3600*1000*24*7).Format('yyyy-MM-dd'));
+    });
+
+
+    function check() {
+        $.ajax({
+            url: "http://localhost/user/info",
+            method: "GET",
+            contentType: "application/json",
+            success: function(result, status, xhr) {
+                var resJson = xhr.responseJSON;
+                console.log(resJson)
+                if(resJson != null) {
+                    if(resJson.code == 1) {  // login in
+
+                        refreshUserInfo(resJson.data)
+
+                        return;
+                    } else {
+                        UIkit.notification({message: 'Not login, redirct to sign page...'});
+                        window.location.href="/login.html";
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                UIkit.notification({message: 'Service not valid, redirct to sign page...'});
+                window.location.href="/login.html";
+                return;
+            }
+        });
+    }
+
+
+    function updateNick() {
+        var data = {
+            nickname: $("#current-nickname").val()
+        };
+        if(data.nickname == "") {
+            UIkit.notification({status: "warning", message: 'nickname is empty.'});
+            return
+        }
+        $.ajax({
+            url: "http://localhost/user/nick",
+            method: "POST",
+            dataType: "json",
+            data: JSON.stringify(data),
+            contentType: "application/json; charset=UTF-8",
+            success: function(result, status, xhr) {
+                var resJson = xhr.responseJSON;
+                console.log(resJson);
+                if(resJson != null) {
+                    if(resJson.code == 1 && resJson.data != null) {
+                        // fill user info
+                        refreshUserInfo(resJson.data);
+                        UIkit.notification({status: "success", message: 'update nickname success, new nickname: ' + resJson.data.nickname});
+                    } else {
+                        UIkit.notification({message: 'update nickname failure: ' + resJson.msg});
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                UIkit.notification({message: 'Service not valid, redirct to sign page...'});
+            },
+            complete: function() {
+            }
+        });
+    }
+    $("#update-nick-submit").click(updateNick);
+
+
+    function refreshUserInfo(user) {
+        window["user"] = {
+            "username": user.username,
+            "nickname": user.nickname,
+            "profile":  user.profile
+        }
+        // fill user info
+        $(".current-username").text("USERNAME: " + user.username);
+        $(".current-nickname").text("NICKNAME: " + user.nickname);
+        // demo: "http://localhost/profile/default.jpg"
+        UIkit.img(".current-profile", {dataSrc: user.profile})
+
+        $("#current-nickname").text("")
+        $("#current-nickname").attr("placeholder", user.nickname)
+    }
+
+
+    function formatFileSizeHuman(size) {
+        if(size < 1<<10) {
+            return size + 'B';
+        } else if(size < 1<<20) {
+            return (size / (1<<10)).toFixed(2) + 'KB';
+        } else if(size < 1<<30) {
+            return (size / (1<<20)).toFixed(2) + 'MB';
+        } else if(size < 1<<40) {
+            return (size / (1<<30)).toFixed(2) + 'GB';
+        } else {
+            return (size / (1<<40)).toFixed(2) + 'TB';
+        }
+    }
+    function formatDate_yyyyMMddhhmmss(timestamp) {
+        return new Date(timestamp).Format('yyyy-MM-dd hh:mm:ss');
+    }
+
+
+    $("#update-profile-submit").click(updateProfile);
+    function updateProfile(_this) {
+        if($("#profile").prop('files') == null || $("#profile").prop('files').length == 0) {
+            UIkit.notification({status: 'warning', message: 'File cloud not be empty.'});
+            return false;
+        }
+        var fileForm = new FormData();
+        fileForm.append("profile", $("#profile").prop('files')[0]);
+
+        $.ajax({
+            url: "http://localhost/user/profile",
+            method: "POST",
+            data: fileForm,
+            cache: false,
+            processData: false,
+            contentType: false,
+            beforeSend: function() {
+                $("#update-profile-submit").attr("disabled");
+                $("#update-profile-spinner").append('<div uk-spinner></div>');
+            },
+            success: function(result, status, xhr) {
+                var resJson = xhr.responseJSON;
+                console.log(resJson);
+                if(resJson != null && resJson.code == 1) {
+                    UIkit.notification({status: 'success', message: 'Upload success...'});
+                    refreshUserInfo(resJson.data)
+                } else {
+                    UIkit.notification({status: 'warning', message: 'Upload Failure...'});
+                }
+            },
+            error: function(xhr, status, error) {
+                UIkit.notification({status: 'danger', message: xhr.error});
+            },
+            complete: function() {
+                fileEl = $("#profile");
+                fileEl.after(fileEl.clone().val(""));
+                fileEl.remove();
+                setTimeout(function() {
+                    $("#update-profile-spinner").empty();
+                    $("#update-profile-submit").removeAttr("disabled");
+                }, 1000);
+            }
+        });
+    }
+
+    // function logout() {
+    //     $.ajax({
+    //         url: "http://localhost/user/logout",
+    //         method: "POST",
+    //         contentType: "application/json",
+    //         success: function(result, status, xhr) {
+    //             var resJson = xhr.responseJSON;
+    //             if(resJson != null) {
+    //                 UIkit.notification({status: 'success', message: 'Logout success, redirct to sign page...'});
+    //                 setTimeout(function() {
+    //                     window.location.href="/login.html";
+    //                 }, 2000);
+    //                 return;
+    //             }
+    //         },
+    //         error: function(xhr, status, error) {
+    //             return;
+    //         }
+    //     });
+    // }
+</script>
+</html>

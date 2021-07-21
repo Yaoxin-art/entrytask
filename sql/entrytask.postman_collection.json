@@ -88,7 +88,8 @@
 					{
 						"key": "token",
 						"value": "08DB2241739A2A0B2D6366BB5DF9A6D5",
-						"type": "text"
+						"type": "text",
+						"disabled": true
 					}
 				],
 				"url": {
@@ -114,7 +115,8 @@
 					{
 						"key": "token",
 						"value": "A916CC1A2CBA60C889F35B13FF8F42ED",
-						"type": "text"
+						"type": "text",
+						"disabled": true
 					}
 				],
 				"body": {
@@ -150,7 +152,8 @@
 					{
 						"key": "token",
 						"value": "A916CC1A2CBA60C889F35B13FF8F42ED",
-						"type": "text"
+						"type": "text",
+						"disabled": true
 					}
 				],
 				"body": {
