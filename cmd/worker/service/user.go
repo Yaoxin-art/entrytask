@@ -12,6 +12,16 @@ import (
 	"time"
 )
 
+// QueryUsernameList 查询size个用户名
+func QueryUsernameList(size int) *[]string {
+	users, err := selectUsernameList(size)
+	if err != nil {
+		return nil
+	}
+	logrus.Infof("select username size:%d, results:%v", size, users)
+	return &users
+}
+
 // QueryByToken 通过token查询已登录的用户
 // return user facade.User, err facade.BizErr
 // user:	用户信息
@@ -70,6 +80,7 @@ func Login(request *facade.UserLoginRequest) (user facade.User, token string, er
 	logrus.Infof("login success")
 	token = generateToken(request.Username)
 	go cacheTokenForUser(token, userT.Username)
+	go cacheUserInfoIntoRedis(*userConvert(*userT))
 	return *userConvert(*userT), token, 0
 }
 

@@ -156,3 +156,13 @@ func TestUpdateUserProfile3(t *testing.T) {
 func TestGenerateToken(t *testing.T) {
 	t.Logf("generate token:%s", generateToken("zeng1234"))
 }
+
+func TestQueryUsernameList(t *testing.T) {
+	size := 200
+	users := QueryUsernameList(size)
+	if users == nil {
+		t.Errorf("query username list err")
+	} else {
+		t.Logf("query username list:%v", *users)
+	}
+}

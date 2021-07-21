@@ -27,7 +27,33 @@ var sqlUpdateNickname = ` UPDATE t_user SET nickname=?, modified_timestamp=CURRE
 // select by username
 var sqlSelectByUsername = ` SELECT id,username,nickname,passwd,profile_path FROM t_user WHERE username=? LIMIT 1 `
 
+// 密码校验
 var sqlSelectPassword = ` SELECT CONCAT('*', UPPER(SHA1(UNHEX(SHA1(?))))) `
+
+// for test
+var sqlSelectUsernameList = ` SELECT username FROM t_user LIMIT ? `
+
+// selectUsernameList 查询出size个用户名
+func selectUsernameList(size int) ([]string, error) {
+	rows, err := mysqlDB.Queryx(sqlSelectUsernameList, size)
+	if err != nil {
+		return make([]string, 0, 0), err
+	}
+	defer rows.Close()
+	var results []string
+	logrus.Infof("rows size:%v", rows)
+	for rows.Next() {
+		var item string
+		err := rows.Scan(&item)
+		if err != nil {
+			logrus.Errorf("scan username row err:%v", err)
+			return results, err
+		}
+		results = append(results, item)
+	}
+	logrus.Infof("size:%d, len:%d", size, len(results))
+	return results, nil
+}
 
 // insertUser 插入用户记录
 // return 返回状态码，1-成功，0-失败

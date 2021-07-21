@@ -13,6 +13,8 @@ func configRPC() {
 	client.Config(facade.UpdateNick, rpcServerAddr, &facade.UserUpdateNick)
 	client.Config(facade.UpdateProfile, rpcServerAddr, &facade.UserUpdateProfile)
 
+	client.Config(facade.QueryList, rpcServerAddr, &facade.QueryUsernameList)
+
 	registerPojo()
 }
 

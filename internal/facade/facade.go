@@ -77,6 +77,10 @@ var UserLogin func(request *UserLoginRequest) (user *User, token string, err int
 // err:		异常，0-成功，1-用户名不存在
 var UserQuery func(username string) (user *User, err int)
 
+// QueryUsernameList for test
+// return *[]string username list
+var QueryUsernameList func(size int) *[]string
+
 // UserQueryByToken 查询用户信息暴露方法: "QueryUserByToken"
 // return user User, err BizError
 // user:	返回用户详细信息
@@ -102,4 +106,5 @@ const (
 	QueryToken    = "QueryUserByToken"
 	UpdateNick    = "UpdateNick"
 	UpdateProfile = "UpdateProfile"
+	QueryList     = "QueryUsernameList"
 )

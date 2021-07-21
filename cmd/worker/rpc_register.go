@@ -14,6 +14,8 @@ func registerRPC() {
 	server.Register(facade.UpdateNick, service.UpdateUserNick)
 	server.Register(facade.UpdateProfile, service.UpdateUserProfile)
 
+	server.Register(facade.QueryList, service.QueryUsernameList)
+
 	registerPojo()
 }
 

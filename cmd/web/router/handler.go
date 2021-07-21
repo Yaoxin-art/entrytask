@@ -92,8 +92,8 @@ func login(c *gin.Context) {
 	user, token, bizErr := facade.UserLogin(&request)
 	if bizErr == 0 {
 		// success
-		fillProfilePrefix(user) // fillProfilePrefix
-		c.SetCookie("token", token, 1800, "/", "localhost", false, true)	// set cookie
+		fillProfilePrefix(user)                                          // fillProfilePrefix
+		c.SetCookie("token", token, 1800, "/", "localhost", false, true) // set cookie
 		c.JSON(http.StatusOK, Response{
 			Code: 1,
 			Msg:  token,
@@ -126,7 +126,7 @@ func logout(c *gin.Context) {
 // code: 1-成功，0-未登录
 func info(c *gin.Context) {
 	token, err := c.Cookie("token")
-	if err != nil || token == ""  {
+	if err != nil || token == "" {
 		notLogin(c)
 		return
 	}
@@ -205,7 +205,11 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 		}
 	}(file)
 
-	file.Seek(0, 0)	// 重置文件指针
+	_, errSeek := file.Seek(0, 0) // 重置文件指针
+	if errSeek != nil {
+		logrus.Errorf("seek file err:%v", errSeek)
+		return "", ""
+	}
 	_, err = io.Copy(out, file)
 	if err != nil {
 		if os.IsExist(err) {
@@ -223,7 +227,7 @@ func storageUploadFile(c *gin.Context) (profile, url string) {
 // profileUpdate 修改用户头像
 func profileUpdate(c *gin.Context) {
 	token, err := c.Cookie("token")
-	if err != nil || token == ""  {
+	if err != nil || token == "" {
 		notLogin(c)
 		return
 	}
@@ -277,7 +281,7 @@ func profileUpdate(c *gin.Context) {
 // nickUpdate 修改用户昵称
 func nickUpdate(c *gin.Context) {
 	token, err := c.Cookie("token")
-	if err != nil || token == ""  {
+	if err != nil || token == "" {
 		notLogin(c)
 		return
 	}
