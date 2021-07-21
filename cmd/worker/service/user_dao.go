@@ -41,7 +41,6 @@ func selectUsernameList(size int) ([]string, error) {
 	}
 	defer rows.Close()
 	var results []string
-	logrus.Infof("rows size:%v", rows)
 	for rows.Next() {
 		var item string
 		err := rows.Scan(&item)
@@ -51,7 +50,6 @@ func selectUsernameList(size int) ([]string, error) {
 		}
 		results = append(results, item)
 	}
-	logrus.Infof("size:%d, len:%d", size, len(results))
 	return results, nil
 }
 

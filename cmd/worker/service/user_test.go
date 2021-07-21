@@ -163,6 +163,6 @@ func TestQueryUsernameList(t *testing.T) {
 	if users == nil {
 		t.Errorf("query username list err")
 	} else {
-		t.Logf("query username list:%v", *users)
+		t.Logf("query username list length:%v", len(*users))
 	}
 }

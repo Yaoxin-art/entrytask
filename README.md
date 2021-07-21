@@ -42,4 +42,11 @@ EntryTask项目，通过实现RPC通用框架，使用Go HTTP API，MySQL或Redi
 
 ## 八、SLA
 
+### coverage
+![make cover](/docs/imgs/make_cover.png)
+
+### testcase
+![make test](/docs/imgs/make_test.png)
+
+### benchmark
 TODO：压测报告

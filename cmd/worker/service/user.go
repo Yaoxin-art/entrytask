@@ -18,7 +18,6 @@ func QueryUsernameList(size int) *[]string {
 	if err != nil {
 		return nil
 	}
-	logrus.Infof("select username size:%d, results:%v", size, users)
 	return &users
 }
 

@@ -25,8 +25,8 @@ var clients []*http.Client
 var users []user
 
 func init() {
-	initUsers()
-	initHttpClients()
+	//initUsers()
+	//initHttpClients()
 }
 
 func initUsers() {
