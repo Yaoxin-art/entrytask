@@ -29,7 +29,7 @@ func QueryByToken(token string) (user facade.User, err int) {
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("QueryByToken spend time:%d ns", end-start)
 	}()
 	username := getTokenUsername(token)
 	if username == "" {
@@ -46,7 +46,7 @@ func Logon(request *facade.UserLogonRequest) (username string, err int) {
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("Logon spend time:%d ns", end-start)
 	}()
 	if request.Username == "" || request.Nickname == "" || request.Password == "" {
 		// todo: 校验字段长度和字符规范
@@ -76,7 +76,7 @@ func Login(request *facade.UserLoginRequest) (user facade.User, token string, er
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("Login spend time:%d ns", end-start)
 	}()
 	// 校验账号密码是否正确
 	// if not exist, query from db, and refresh into redis
@@ -104,7 +104,7 @@ func QueryByUsername(username string) (facade.User, int) {
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("QueryByUsername spend time:%d ns", end-start)
 	}()
 	// query from redis
 	cached, errNegligible := queryUserInfoFromRedis(username)
@@ -131,7 +131,7 @@ func UpdateUserProfile(request *facade.UserUpdateRequest) (user facade.User, err
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("UpdateUserProfile spend time:%d ns", end-start)
 	}()
 	if request.ProfilePath == "" || request.Username == "" {
 		return facade.User{}, 1
@@ -157,7 +157,7 @@ func UpdateUserNick(request *facade.UserUpdateRequest) (user facade.User, err in
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("UpdateUserNick spend time:%d ns", end-start)
 	}()
 	if request.Nickname == "" || request.Username == "" {
 		return facade.User{}, 1

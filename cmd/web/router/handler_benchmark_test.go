@@ -17,14 +17,14 @@ import (
 
 type user struct {
 	Username string `json:"username"` // 从数据库中获取
-	Password string `json:"password"`// 当前所有用户密码都为 "123456"
+	Password string `json:"password"` // 当前所有用户密码都为 "123456"
 }
 
 const httpServerAddr = "http://localhost:7777"
 
 const (
 	clientSize = 200
-	userSize   = 200
+	userSize   = 20000
 )
 
 var clients []*http.Client
@@ -75,7 +75,7 @@ func clientLogin(client *http.Client, u user) {
 	logrus.Infof("login user:%v", u)
 	logrus.Infof("login user:%v", string(data))
 	reqUrl := httpServerAddr + "/user/login"
-	req, err := http.NewRequest(http.MethodPost, reqUrl,  bytes.NewBuffer(data))
+	req, err := http.NewRequest(http.MethodPost, reqUrl, bytes.NewBuffer(data))
 	//res, err := client.Post(reqUrl, "application/json", bytes.NewBuffer(data))
 	res, err := client.Do(req)
 	if err != nil {
@@ -92,7 +92,7 @@ func BenchmarkLogin(b *testing.B) {
 	defer destroyHttpClients()
 	b.ResetTimer()
 	b.SetParallelism(clientSize / 15)
-	fmt.Printf("parallelism:%d", clientSize / runtime.NumCPU())
+	fmt.Printf("parallelism:%d", clientSize/runtime.NumCPU())
 	b.RunParallel(func(pb *testing.PB) {
 		defer func() {
 			logrus.Infof("test ...")
@@ -101,7 +101,7 @@ func BenchmarkLogin(b *testing.B) {
 			id := rand.Intn(clientSize)
 			client := clients[id]
 			requestUrl := httpServerAddr + "/user/info"
-			req, errReq:= http.NewRequest(http.MethodGet, requestUrl, nil)
+			req, errReq := http.NewRequest(http.MethodGet, requestUrl, nil)
 			if errReq != nil {
 				b.Error(errReq)
 				continue
@@ -133,7 +133,6 @@ func BenchmarkLogin(b *testing.B) {
 		}
 	})
 }
-
 
 func BenchmarkUpdateNick(b *testing.B) {
 	for i := 0; i < b.N; i++ {

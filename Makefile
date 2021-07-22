@@ -34,5 +34,13 @@ cover:
 	go tool cover -html=coverage.out
 	rm -f coverage.out
 
-profiling:
-	go test -bench=/cmd/... -cpuprofile cpu.out -memprofile mem.out $ARGS
+benchLogin:
+	go test -v ./cmd/web/router -test.bench Login -test.cpuprofile benchmark_login_cpu.out -test.memprofile benchmark_login_mem.out $ARGS
+
+runRpc:
+	go run ./cmd/worker
+
+runWeb:
+	go run ./cmd/web
+
+
