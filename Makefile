@@ -24,9 +24,9 @@ vendor:
 	go mod vendor
 
 vet:
-	go fmt ./pkg/...
-	go fmt ./internal/...
-	go fmt ./cmd/...
+	go vet ./pkg/...
+	go vet ./internal/...
+	go vet ./cmd/...
 
 test:
 	go test ./cmd/... -coverprofile=$(COVERPROFILE) -covermode atomic -v -race $(DEBUG) $(ARGS)
@@ -41,11 +41,10 @@ benchLogin:
 	go test -v ./cmd/web/router -test.bench Login
 
 benchInfoFix:
-	go test -v ./cmd/web/router -test.bench InfoFix
+	go test -v ./cmd/web/router -test.bench InfoFix -test.count 2
 
 benchInfoRandom:
-	go test -v ./cmd/web/router -test.bench InfoRandom
-
+	go test -v ./cmd/web/router -test.bench InfoRandom -test.count 2
 
 runRpc: vendor
 	go run ./cmd/worker

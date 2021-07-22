@@ -8,7 +8,7 @@ import (
 
 type TUser struct {
 	Id          int64  `db:"id"`
-	Username    string `db:"username""`
+	Username    string `db:"username"`
 	Nickname    string `db:"nickname"`
 	Password    string `db:"passwd"`
 	ProfilePath string `db:"profile_path"`

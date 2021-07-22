@@ -69,7 +69,7 @@ func (s *Server) handleNewConn(session *Session) {
 		result.RequestTimestamp = time.Now().UnixNano() // get request timestamp
 		if err != nil {
 			if err.Error() == "EOF" { // ignore
-				continue
+				break
 			}
 			if strings.Contains(err.Error(), "connect reset by peer") { // disconnect
 				break

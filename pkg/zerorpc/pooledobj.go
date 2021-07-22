@@ -8,7 +8,7 @@ import (
 )
 
 type MyPooledObj struct {
-	session Session
+	session *Session
 }
 
 type MyPooledObjFactory struct {
@@ -23,7 +23,7 @@ func (f *MyPooledObjFactory) MakeObject(ctx context.Context) (*pool.PooledObject
 	}
 	return pool.NewPooledObject(
 			&MyPooledObj{
-				session: *NewSession(conn),
+				session: NewSession(conn),
 			}),
 		nil
 }

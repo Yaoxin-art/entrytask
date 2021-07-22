@@ -28,7 +28,7 @@ type nicked struct {
 const httpServerAddr = "http://127.0.0.1:7777"
 
 const (
-	clientSize = 200
+	clientSize = 2000
 	userSize   = 20000
 )
 
@@ -87,11 +87,17 @@ func clientLogin(client *http.Client, u user) {
 	//res, err := client.Post(reqUrl, "application/json", bytes.NewBuffer(data))
 	res, err := client.Do(req)
 	if err != nil {
+		logrus.Errorf("login request close err:%v", err)
+	}
+	err = req.Body.Close()
+	if err != nil {
 		logrus.Errorf("post login err:%v", err)
+		return
 	}
 	body, errBody := ioutil.ReadAll(res.Body)
 	if errBody != nil {
 		logrus.Errorf("get body err:%v", err)
+		return
 	}
 	err = res.Body.Close()
 	if err != nil {
@@ -131,26 +137,35 @@ func BenchmarkLogin(b *testing.B) {
 			res, err := client.Do(req)
 			if err != nil {
 				b.Error(err)
+			}
+			err = req.Body.Close()
+			if err != nil {
+				b.Error(err)
 				continue
 			}
 			if res.StatusCode != http.StatusOK {
-				resBody, _ := ioutil.ReadAll(res.Body)
-				b.Error(string(resBody))
-				err := res.Body.Close()
+				resBody, err := ioutil.ReadAll(res.Body)
 				if err != nil {
 					b.Error(err)
+					continue
 				}
-				continue
+				b.Log(string(resBody))
+				err = res.Body.Close()
+				if err != nil {
+					b.Error(err)
+					continue
+				}
+			} else {
+				body, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					logrus.Errorf("get body err:%v", err)
+				}
+				err = res.Body.Close()
+				if err != nil {
+					logrus.Errorf("close body err:%v", err)
+				}
+				logrus.Debugf("get response:%v", string(body[:]))
 			}
-			body, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				logrus.Errorf("login get body err:%v", err)
-			}
-			err = res.Body.Close()
-			if err != nil {
-				logrus.Errorf("login close body err:%v", err)
-			}
-			logrus.Debugf("login response:%v", string(body[:]))
 		}
 	})
 }
@@ -188,26 +203,36 @@ func BenchmarkUpdateNick(b *testing.B) {
 			res, err := client.Do(req)
 			if err != nil {
 				b.Error(err)
+			}
+			err = req.Body.Close()
+			if err != nil {
+				b.Error(err)
 				continue
 			}
+
 			if res.StatusCode != http.StatusOK {
-				resBody, _ := ioutil.ReadAll(res.Body)
-				b.Error(string(resBody))
-				err := res.Body.Close()
+				resBody, err := ioutil.ReadAll(res.Body)
 				if err != nil {
 					b.Error(err)
+					continue
 				}
-				continue
+				b.Log(string(resBody))
+				err = res.Body.Close()
+				if err != nil {
+					b.Error(err)
+					continue
+				}
+			} else {
+				body, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					logrus.Errorf("get body err:%v", err)
+				}
+				err = res.Body.Close()
+				if err != nil {
+					logrus.Errorf("close body err:%v", err)
+				}
+				logrus.Debugf("get response:%v", string(body[:]))
 			}
-			body, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				logrus.Errorf("login get body err:%v", err)
-			}
-			err = res.Body.Close()
-			if err != nil {
-				logrus.Errorf("login close body err:%v", err)
-			}
-			logrus.Debugf("login response:%v", string(body[:]))
 		}
 	})
 }
@@ -226,41 +251,46 @@ func BenchmarkInfoFix(b *testing.B) {
 			var err error
 			id := rand.Intn(clientSize)
 			client := clients[id]
-			user := users[id]
-			requestUrl := httpServerAddr + "/user/find?username=" + user.Username
+			u := users[id]
+			requestUrl := httpServerAddr + "/user/find?username=" + u.Username
 			req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 			if err != nil {
 				b.Error(err)
 				continue
 			}
+			req.Close = true
 			res, err := client.Do(req)
 			if err != nil {
 				b.Error(err)
 				continue
 			}
+
 			if res.StatusCode != http.StatusOK {
-				resBody, _ := ioutil.ReadAll(res.Body)
-				b.Error(string(resBody))
-				err := res.Body.Close()
+				resBody, err := ioutil.ReadAll(res.Body)
 				if err != nil {
 					b.Error(err)
+					continue
 				}
-				continue
+				b.Log(string(resBody))
+				err = res.Body.Close()
+				if err != nil {
+					b.Error(err)
+					continue
+				}
+			} else {
+				body, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					logrus.Errorf("get body err:%v", err)
+				}
+				err = res.Body.Close()
+				if err != nil {
+					logrus.Errorf("close body err:%v", err)
+				}
+				logrus.Debugf("get response:%v", string(body[:]))
 			}
-			body, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				logrus.Errorf("get body err:%v", err)
-			}
-			err = res.Body.Close()
-			if err != nil {
-				logrus.Errorf("close body err:%v", err)
-			}
-			logrus.Debugf("find response:%v", string(body[:]))
-
 		}
 	})
 }
-
 
 func BenchmarkInfoRandom(b *testing.B) {
 	initForBenchmark(false)
@@ -277,8 +307,8 @@ func BenchmarkInfoRandom(b *testing.B) {
 			id := rand.Intn(clientSize)
 			client := clients[id]
 			uid := rand.Intn(userSize)
-			user := users[uid]
-			requestUrl := httpServerAddr + "/user/find?username=" + user.Username
+			u := users[uid]
+			requestUrl := httpServerAddr + "/user/find?username=" + u.Username
 			req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 			if err != nil {
 				b.Error(err)
@@ -289,33 +319,38 @@ func BenchmarkInfoRandom(b *testing.B) {
 				b.Error(err)
 				continue
 			}
+
 			if res.StatusCode != http.StatusOK {
-				resBody, _ := ioutil.ReadAll(res.Body)
-				b.Error(string(resBody))
-				err := res.Body.Close()
+				resBody, err := ioutil.ReadAll(res.Body)
 				if err != nil {
 					b.Error(err)
+					continue
 				}
-				continue
+				b.Log(string(resBody))
+				err = res.Body.Close()
+				if err != nil {
+					b.Error(err)
+					continue
+				}
+			} else {
+				body, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					logrus.Errorf("get body err:%v", err)
+				}
+				err = res.Body.Close()
+				if err != nil {
+					logrus.Errorf("close body err:%v", err)
+				}
+				logrus.Debugf("get response:%v", string(body[:]))
 			}
-			body, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				logrus.Errorf("get body err:%v", err)
-			}
-			err = res.Body.Close()
-			if err != nil {
-				logrus.Errorf("close body err:%v", err)
-			}
-			logrus.Debugf("info response:%v", string(body[:]))
-
 		}
 	})
 }
 
 const (
-	MaxConnsPerHost     int = 0
-	MaxIdleConns        int = 0
-	MaxIdleConnsPerHost int = 0
+	MaxConnsPerHost     int = 2000
+	MaxIdleConns        int = 100
+	MaxIdleConnsPerHost int = 10
 )
 
 // getClient init http client
@@ -334,6 +369,7 @@ func getClient() *http.Client {
 			MaxConnsPerHost:     MaxConnsPerHost,
 			MaxIdleConns:        MaxIdleConns,
 			MaxIdleConnsPerHost: MaxIdleConnsPerHost,
+			DisableKeepAlives: 	 true,
 		},
 		Jar: cookieJar,
 	}

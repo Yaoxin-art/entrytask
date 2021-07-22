@@ -11,7 +11,7 @@ import (
 type GrettyClient struct {
 	serverAddr  string
 	services    map[string]interface{}
-	sessionPool pool.ObjectPool
+	sessionPool *pool.ObjectPool
 }
 
 func NewGrettyClient(serverAddr string, coreSize, maxSize int) *GrettyClient {
@@ -32,7 +32,7 @@ func NewGrettyClient(serverAddr string, coreSize, maxSize int) *GrettyClient {
 	return &GrettyClient{
 		serverAddr:  serverAddr,
 		services:    make(map[string]interface{}),
-		sessionPool: *sessionPool,
+		sessionPool: sessionPool,
 	}
 }
 

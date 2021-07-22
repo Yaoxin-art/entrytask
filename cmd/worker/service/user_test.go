@@ -68,7 +68,8 @@ func TestRegisterUser2(t *testing.T) {
 	t.Logf("register user:%v case:2 success, msg:%v", user, err)
 }
 
-// todo
+// TestLogin 测试登录
+// case 1：正常登录
 func TestLogin(t *testing.T) {
 	request := facade.UserLoginRequest{Username: "zero1234", Password: "123456"}
 	user, token, err := Login(&request)
