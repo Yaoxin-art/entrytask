@@ -1,4 +1,4 @@
-.PHONY: build clean fmt vet test bench cover profiling
+.PHONY: build clean fmt vet test bench cover runRpc runWeb benchInfoRandom benchInfoFix benchLogin
 
 ARGS=
 COVERPROFILE=coverage.txt
@@ -37,12 +37,14 @@ cover:
 	go tool cover -html=coverage.out
 	rm -f coverage.out
 
-benchLogin: vendor
-	go test -v ./cmd/web/router -test.bench Login -test.cpuprofile benchmark_login_cpu.out -test.memprofile benchmark_login_mem.out $ARGS
+benchLogin:
+	go test -v ./cmd/web/router -test.bench Login
 
+benchInfoFix:
+	go test -v ./cmd/web/router -test.bench InfoFix
 
-benchInfo: vendor
-	go test -v ./cmd/web/router -test.bench Info -test.cpuprofile benchmark_info_cpu.out -test.memprofile benchmark_info_mem.out $ARGS
+benchInfoRandom:
+	go test -v ./cmd/web/router -test.bench InfoRandom
 
 
 runRpc: vendor
@@ -50,4 +52,3 @@ runRpc: vendor
 
 runWeb:	vendor
 	go run ./cmd/web
->>>>>>> dev_pool_v2

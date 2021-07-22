@@ -7,6 +7,7 @@
 *.out
 coverage.txt
 bin/
+*.test
 
 # goland
 *.yml

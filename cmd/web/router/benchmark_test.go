@@ -17,6 +17,11 @@ import (
 type user struct {
 	Username string `json:"username"` // 从数据库中获取
 	Password string `json:"password"` // 当前所有用户密码都为 "123456"
+}
+
+type nicked struct {
+	Username string `json:"username"` // 从数据库中获取
+	Password string `json:"password"` // 当前所有用户密码都为 "123456"
 	Nickname string `json:"nickname"` // 昵称
 }
 
@@ -30,9 +35,12 @@ const (
 var clients []*http.Client
 var users []user
 
-func init() {
+func initForBenchmark(login bool) {
+	clients = make([]*http.Client, 0)
+	users = make([]user, 0)
+
 	initUsers()
-	initHttpClients(true)
+	initHttpClients(login)
 }
 
 func initUsers() {
@@ -47,7 +55,7 @@ func initUsers() {
 			Password: "123456",
 		})
 	}
-	logrus.Infof("init user list success, user list size:%d, users:%v", len(users), users)
+	logrus.Debugf("init user list success, user list size:%d, users:%v", len(users), users)
 }
 
 func initHttpClients(login bool) {
@@ -93,6 +101,7 @@ func clientLogin(client *http.Client, u user) {
 }
 
 func BenchmarkLogin(b *testing.B) {
+	initForBenchmark(false)
 	defer destroyHttpClients()
 
 	b.ResetTimer()
@@ -147,6 +156,7 @@ func BenchmarkLogin(b *testing.B) {
 }
 
 func BenchmarkUpdateNick(b *testing.B) {
+	initForBenchmark(true)
 	defer destroyHttpClients()
 
 	b.ResetTimer()
@@ -161,10 +171,13 @@ func BenchmarkUpdateNick(b *testing.B) {
 			client := clients[id]
 			iu := rand.Intn(userSize)
 			u := users[iu]
-			u.Nickname = u.Nickname + ""
-			data, errData := json.Marshal(u)
+			un := nicked{
+				Username: u.Username,
+				Nickname: "New Nick",
+			}
+			data, errData := json.Marshal(un)
 			if errData != nil {
-				logrus.Panicf("json error:%v", u)
+				logrus.Panicf("json error:%v", un)
 				return
 			}
 			reqUrl := httpServerAddr + "/user/login"
@@ -195,12 +208,13 @@ func BenchmarkUpdateNick(b *testing.B) {
 			if err != nil {
 				logrus.Errorf("login close body err:%v", err)
 			}
-			logrus.Infof("login response:%v", string(body[:]))
+			logrus.Debugf("login response:%v", string(body[:]))
 		}
 	})
 }
 
-func BenchmarkInfo(b *testing.B) {
+func BenchmarkInfoFix(b *testing.B) {
+	initForBenchmark(false)
 	defer destroyHttpClients()
 
 	b.ResetTimer()
@@ -213,7 +227,9 @@ func BenchmarkInfo(b *testing.B) {
 			var err error
 			id := rand.Intn(clientSize)
 			client := clients[id]
-			requestUrl := httpServerAddr + "/user/info"
+			uid := rand.Intn(userSize)
+			user := users[uid]
+			requestUrl := httpServerAddr + "/user/find?username=" + user.Username
 			req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 			if err != nil {
 				b.Error(err)
@@ -241,7 +257,58 @@ func BenchmarkInfo(b *testing.B) {
 			if err != nil {
 				logrus.Errorf("close body err:%v", err)
 			}
-			logrus.Infof("info response:%v", string(body[:]))
+			logrus.Debugf("find response:%v", string(body[:]))
+
+		}
+	})
+}
+
+
+func BenchmarkInfoRandom(b *testing.B) {
+	initForBenchmark(false)
+	defer destroyHttpClients()
+
+	b.ResetTimer()
+	parallelism := clientSize
+	b.SetParallelism(parallelism)
+	fmt.Printf("parallelism:%d \n", parallelism)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			var err error
+			id := rand.Intn(clientSize)
+			client := clients[id]
+			uid := rand.Intn(userSize)
+			user := users[uid]
+			requestUrl := httpServerAddr + "/user/find?username=" + user.Username
+			req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			res, err := client.Do(req)
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			if res.StatusCode != http.StatusOK {
+				resBody, _ := ioutil.ReadAll(res.Body)
+				b.Error(string(resBody))
+				err := res.Body.Close()
+				if err != nil {
+					b.Error(err)
+				}
+				continue
+			}
+			body, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				logrus.Errorf("get body err:%v", err)
+			}
+			err = res.Body.Close()
+			if err != nil {
+				logrus.Errorf("close body err:%v", err)
+			}
+			logrus.Debugf("info response:%v", string(body[:]))
 
 		}
 	})

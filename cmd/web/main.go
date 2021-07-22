@@ -37,7 +37,7 @@ var client *zerorpc.GrettyClient
 func main() {
 	initLog()
 
-	client = zerorpc.NewGrettyClient(rpcServerAddr, 10, 50) // init rpc client instance
+	client = zerorpc.NewGrettyClient(rpcServerAddr, 50, 100) // init rpc client instance
 	configRPC()                                             // config for rpc client
 
 	httpServer := router.InitGin() // init http server with gin

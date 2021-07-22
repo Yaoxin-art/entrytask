@@ -24,7 +24,7 @@ func initRedis() *redis.Client {
 		DialTimeout:        0,
 		ReadTimeout:        0,
 		WriteTimeout:       0,
-		PoolSize:           0,
+		PoolSize:           100,
 		MinIdleConns:       0,
 		MaxConnAge:         0,
 		PoolTimeout:        0,

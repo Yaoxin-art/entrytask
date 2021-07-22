@@ -21,8 +21,8 @@ func NewGrettyClient(serverAddr string, coreSize, maxSize int) *GrettyClient {
 	//}
 	ctx := context.Background()
 	config := pool.ObjectPoolConfig{
-		MaxTotal: maxSize,
-		MaxIdle:  coreSize,
+		MaxTotal:           maxSize,
+		MaxIdle:            coreSize,
 		BlockWhenExhausted: true,
 	}
 	sessionPool := pool.NewObjectPool(ctx, &MyPooledObjFactory{

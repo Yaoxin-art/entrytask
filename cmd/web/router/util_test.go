@@ -17,7 +17,3 @@ func TestMd5String(t *testing.T) {
 	word = "Good night"
 	t.Logf("md5:%s result: %s", word, Md5String(word))
 }
-
-func TestPool(t *testing.T) {
-
-}
