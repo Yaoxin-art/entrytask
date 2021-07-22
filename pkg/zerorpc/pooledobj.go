@@ -30,12 +30,15 @@ func (f *MyPooledObjFactory) MakeObject(ctx context.Context) (*pool.PooledObject
 
 func (f *MyPooledObjFactory) DestroyObject(ctx context.Context, object *pool.PooledObject) error {
 	// do destroy
-
-	return nil
+	myobj := object.Object.(*MyPooledObj)
+	logrus.Infof("sessoin in poll destroyed, obj:%s", myobj.session.conn.LocalAddr())
+	return myobj.session.Close()
 }
 
 func (f *MyPooledObjFactory) ValidateObject(ctx context.Context, object *pool.PooledObject) bool {
 	// do validate
+	myobj := object.Object.(*MyPooledObj)
+	logrus.Infof("sessoin in poll destroyed, obj:%s", myobj.session.conn.LocalAddr())
 	return true
 }
 

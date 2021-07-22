@@ -348,9 +348,9 @@ func BenchmarkInfoRandom(b *testing.B) {
 }
 
 const (
-	MaxConnsPerHost     int = 2000
-	MaxIdleConns        int = 100
-	MaxIdleConnsPerHost int = 10
+	MaxConnsPerHost     int = 200
+	MaxIdleConns        int = 10
+	MaxIdleConnsPerHost int = 0
 )
 
 // getClient init http client
@@ -369,7 +369,7 @@ func getClient() *http.Client {
 			MaxConnsPerHost:     MaxConnsPerHost,
 			MaxIdleConns:        MaxIdleConns,
 			MaxIdleConnsPerHost: MaxIdleConnsPerHost,
-			DisableKeepAlives: 	 true,
+			//DisableKeepAlives: 	 true,
 		},
 		Jar: cookieJar,
 	}

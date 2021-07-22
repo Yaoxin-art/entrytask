@@ -120,14 +120,18 @@ func (pc *GrettyClient) pooledCallRPC(methodId string, fooPtr interface{}) {
 	fn.Set(reflect.MakeFunc(fn.Type(), foo))
 }
 
-// dialer session factory
-//func dialer(serverAddr string) (*pool.Session, error) {
-//	conn, err := net.Dial("tcp", serverAddr)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return pool.NewSession(conn), nil
-//}
+
+// zeroValueFnOut 返回值列表填充空值
+func zeroValueFnOut(fooPtr interface{}) []reflect.Value {
+	fn := reflect.ValueOf(fooPtr).Elem()
+	outNum := fn.Type().NumOut()
+	zeroOut := make([]reflect.Value, 0, outNum)
+	for i := 0; i < outNum; i++ {
+		zeroOut = append(zeroOut, reflect.Zero(fn.Type().Out(i)))
+	}
+	return zeroOut
+}
+
 
 func (pc *GrettyClient) Destroy() {
 	logrus.Infof("Rpc GrettyClient destroy...")
