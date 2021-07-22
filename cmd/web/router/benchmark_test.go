@@ -169,8 +169,7 @@ func BenchmarkUpdateNick(b *testing.B) {
 			var err error
 			id := rand.Intn(clientSize)
 			client := clients[id]
-			iu := rand.Intn(userSize)
-			u := users[iu]
+			u := users[id]
 			un := nicked{
 				Username: u.Username,
 				Nickname: "New Nick",
@@ -227,8 +226,7 @@ func BenchmarkInfoFix(b *testing.B) {
 			var err error
 			id := rand.Intn(clientSize)
 			client := clients[id]
-			uid := rand.Intn(id)
-			user := users[uid]
+			user := users[id]
 			requestUrl := httpServerAddr + "/user/find?username=" + user.Username
 			req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 			if err != nil {

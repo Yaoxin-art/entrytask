@@ -82,8 +82,8 @@ func BenchmarkInfoRandom(b *testing.B) {
 			id := rand.Intn(clientSize)
 			client := clients[id]
 			uid := rand.Intn(userSize)
+			// 固定用户时 各client各使用一个用户，即 uid=id
 			user := users[uid]
-			// 固定用户时 传递的参数 username固定
 			requestUrl := httpServerAddr + "/user/find?username=" + user.Username
 			req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 			if err != nil {
