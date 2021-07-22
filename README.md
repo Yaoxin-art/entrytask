@@ -208,4 +208,14 @@ ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	1.796s
 
 以上测试结果表明项目达到该要求。
 
+实现样式如：
+登录页面：
+![登录页面](/docs/imgs/home_login.png)
 
+
+修改昵称页面：
+![修改昵称页面](/docs/imgs/home_nick.png)
+
+
+修改头像页面：
+![修改头像页面](/docs/imgs/home_profile.png)
