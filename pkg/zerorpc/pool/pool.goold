@@ -1,0 +1,206 @@
+package pool
+
+import (
+	"errors"
+	"fmt"
+	"git.garena.com/zhenrong.zeng/entrytask/pkg/zerorpc"
+	"github.com/sirupsen/logrus"
+	"sync"
+	"sync/atomic"
+	"time"
+)
+
+var ErrClosed = errors.New("pool: pool is closed")
+var timers = sync.Pool{
+	New: func() interface{} {
+		t := time.NewTimer(time.Hour)
+		t.Stop()
+		return t
+	},
+}
+
+// Options pool options
+type Options struct {
+	// ServerAddr server address
+	ServerAddr string
+	// Dialer conn factory
+	Dialer func(serverAddr string) (*zerorpc.Session, error)
+	// OnClose func execute before conn closed
+	OnClose func(conn *zerorpc.Session) error
+
+	// PoolSize pool size
+	PoolSize int
+	// todo
+	PoolTimeout time.Duration
+}
+
+// ConnPool conn pool
+type ConnPool struct {
+	opt      *Options
+	queue    chan struct{}
+	poolSize int
+	connsMu  sync.Mutex
+	conns    []*zerorpc.Session
+
+	idleConns    []*zerorpc.Session
+	idleConnsLen int
+
+	// dial errors count
+	dialErrorsNum   uint32 // atomic
+	lastDialErrorMu sync.RWMutex
+	lastDialError   error
+
+	_closed uint32 // atomic
+}
+
+// NewConnPool create conn pool
+func NewConnPool(opt *Options) *ConnPool {
+	p := &ConnPool{
+		opt: opt,
+
+		poolSize: opt.PoolSize,
+		queue:    make(chan struct{}, opt.PoolSize),
+		conns:    make([]*zerorpc.Session, 0, opt.PoolSize),
+	}
+	return p
+}
+
+// Get returns existed connection from the pool or creates a new one.
+func (p *ConnPool) Get() (*zerorpc.Session, error) {
+	if p.closed() {
+		return nil, ErrClosed
+	}
+
+	err := p.waitTurn()
+	if err != nil {
+		return nil, err
+	}
+	// pop from idle
+	for {
+		p.connsMu.Lock()
+		cn := p.popIdle()
+		p.connsMu.Unlock()
+
+		if cn == nil {
+			break
+		}
+		return cn, nil
+	}
+
+	newcn, err := p._NewConn()
+	if err != nil {
+		p.freeTurn()
+		return nil, err
+	}
+
+	return newcn, nil
+}
+
+func (p *ConnPool) Put(cn *zerorpc.Session) {
+	p.connsMu.Lock()
+	p.idleConns = append(p.idleConns, cn)
+	p.idleConnsLen++
+	p.connsMu.Unlock()
+	p.freeTurn()
+}
+
+func (p *ConnPool) waitTurn() error {
+	select {
+	case p.queue <- struct{}{}:
+		return nil
+	default:
+		timer := timers.Get().(*time.Timer)
+		timer.Reset(p.opt.PoolTimeout)
+
+		select {
+		case p.queue <- struct{}{}:
+			if !timer.Stop() {
+				<-timer.C
+			}
+			timers.Put(timer)
+			return nil
+		case <-timer.C:
+			timers.Put(timer)
+			return nil
+		}
+	}
+}
+
+func (p *ConnPool) popIdle() *zerorpc.Session {
+	if len(p.idleConns) == 0 {
+		return nil
+	}
+	idx := len(p.idleConns) - 1
+	cn := p.idleConns[idx]
+	p.idleConns = p.idleConns[:idx]
+	p.idleConnsLen--
+	return cn
+}
+
+func (p *ConnPool) _NewConn() (*zerorpc.Session, error) {
+	p.connsMu.Lock()
+	defer p.connsMu.Unlock()
+	if p.poolSize >= p.opt.PoolSize {
+		// todo: out of limit,wait for release
+		logrus.Warnf("pool size out of limit:%d", p.poolSize)
+		time.Sleep(10 * time.Millisecond)
+
+	}
+	cn, err := p.newConn()
+	if err != nil {
+		return nil, err
+	}
+	p.conns = append(p.conns, cn)
+	if p.poolSize < p.opt.PoolSize {
+		p.poolSize++
+	}
+	return cn, nil
+}
+
+func (p *ConnPool) newConn() (*zerorpc.Session, error) {
+	if p.closed() {
+		return nil, ErrClosed
+	}
+	if atomic.LoadUint32(&p.dialErrorsNum) >= uint32(p.opt.PoolSize) {
+		// out of limit, todo: block and wait
+		return nil, fmt.Errorf("require out of pool limit")
+	}
+
+	conn, err := p.opt.Dialer(p.opt.ServerAddr)
+	if err != nil {
+		p.lastDialError = err
+		if atomic.AddUint32(&p.dialErrorsNum, 1) == uint32(p.opt.PoolSize) {
+			go p.tryDial()
+		}
+		return nil, err
+	}
+
+	return conn, nil
+}
+
+func (p *ConnPool) tryDial() {
+	for {
+		if p.closed() {
+			return
+		}
+
+		conn, err := p.opt.Dialer(p.opt.ServerAddr)
+		if err != nil {
+			p.lastDialError = err
+			time.Sleep(time.Second)
+			continue
+		}
+
+		atomic.StoreUint32(&p.dialErrorsNum, 0)
+		_ = conn.Close()
+		return
+	}
+}
+
+func (p *ConnPool) freeTurn() {
+	<-p.queue
+}
+
+func (p *ConnPool) closed() bool {
+	return atomic.LoadUint32(&p._closed) == 1
+}

@@ -113,7 +113,7 @@ func (s *Server) handleNewConn(session *Session) {
 			}
 			continue
 		}
-		logrus.Debugf("get request from addr:%s, methodId:%s at:%s", session.remoteAddr, invocation.MethodId, time.Now().Format(time.RFC3339))
+		logrus.Debugf("get request from addr:%s, methodId:%s at:%s", session, invocation.MethodId, time.Now().Format(time.RFC3339))
 		// invoke
 		foo, ok := s.facades[invocation.MethodId]
 		if !ok {
@@ -158,6 +158,6 @@ func (s *Server) handleNewConn(session *Session) {
 		if errWrite != nil {
 			logrus.Errorf("write zerorpc result err:%v, from addr:%s", err, session.remoteAddr)
 		}
-		logrus.Debugf("zerorpc invoke success, from addr:%s, methodId:%s, result:%v", session.remoteAddr, invocation.MethodId, result)
+		logrus.Debugf("zerorpc invoke success, from addr:%s, methodId:%s, result:%v", session, invocation.MethodId, result)
 	}
 }
