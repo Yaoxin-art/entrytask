@@ -38,7 +38,7 @@ EntryTask项目，通过实现RPC通用框架，使用Go HTTP API，MySQL或Redi
     4、图片访问URL前缀；
 
 部署方案：
-    Makefile包含 clean、fmt、vet、cover、test、build、run 功能，使用`make run [web|worker]`启动。
+    Makefile包含 clean、fmt、vet、cover、test、build、run 等功能，使用`make run[Rpc|Web]`启动。
     启动顺序：
         启动mysql服务
         启动redis服务
@@ -197,11 +197,15 @@ ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	1.796s
 ```
 
 **结果分析：**
+
+
 | 测试项 | 固定200用户并发 | 随机200用户并发 | 固定2000用户并发 | 随机2000用户并发 |
 | --- | --- | --- | --- | --- |
 | 平均耗时 | 653272 ns/op | 1069656 ns/op | 804518 ns/op | 651716 ns/op |
 | 平均QPS | 3493 | 3170 | 1862 | 1936 |
 | 目标QPS | 3000 | 1000 | 1500 | 800 |
 
+
+以上测试结果表明项目达到该要求。
 
 
