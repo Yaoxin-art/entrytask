@@ -7,6 +7,9 @@ EntryTask项目，通过实现RPC通用框架，使用Go HTTP API，MySQL或Redi
 整体分为网关（nginx代）、API层（RPC consumer）、TCP Server层（RPC provider）三层，图片存放于磁盘，前端访问则通过nginx代理，通过配置项确定文件（头像图片）存放的位置，以及配置组装完整访问URL。
 ![整体架构图](/docs/imgs/framework01.png)
 
+项目结构：
+![项目结构](/docs/imgs/project_struct.png)
+
 ## 三、核心逻辑详细设计
 
 ### 1、登录

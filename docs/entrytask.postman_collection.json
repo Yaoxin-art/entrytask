@@ -11,24 +11,13 @@
 				"method": "POST",
 				"header": [],
 				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "username",
-							"value": "zeng1234",
-							"type": "text"
-						},
-						{
-							"key": "password",
-							"value": "123456",
-							"type": "text"
-						},
-						{
-							"key": "nickname",
-							"value": "zeng No.1234",
-							"type": "text"
+					"mode": "raw",
+					"raw": "{\"username\":\"Alen\",\"nickname\":\"Nick Alen\",\"password\":\"123456\"}",
+					"options": {
+						"raw": {
+							"language": "json"
 						}
-					]
+					}
 				},
 				"url": {
 					"raw": "http://localhost:7777/user/logon",
@@ -51,19 +40,13 @@
 				"method": "POST",
 				"header": [],
 				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "username",
-							"value": "zeng1234",
-							"type": "text"
-						},
-						{
-							"key": "password",
-							"value": "123456",
-							"type": "text"
+					"mode": "raw",
+					"raw": "{\"username\":\"zeng1234\",\"password\":\"123456\"}",
+					"options": {
+						"raw": {
+							"language": "json"
 						}
-					]
+					}
 				},
 				"url": {
 					"raw": "http://localhost:7777/user/login",
@@ -127,7 +110,12 @@
 							"type": "file",
 							"src": "/Users/zhenrong.zeng/Workspaces/Data/entrytask/profile/avatar.jpg"
 						}
-					]
+					],
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
 				},
 				"url": {
 					"raw": "http://localhost:7777/user/profile",
@@ -157,14 +145,13 @@
 					}
 				],
 				"body": {
-					"mode": "formdata",
-					"formdata": [
-						{
-							"key": "nickname",
-							"value": "Zeng.New",
-							"type": "text"
+					"mode": "raw",
+					"raw": "{\"nickname\":\"Nick Alen New\"}",
+					"options": {
+						"raw": {
+							"language": "json"
 						}
-					]
+					}
 				},
 				"url": {
 					"raw": "http://localhost:7777/user/nick",
@@ -176,6 +163,54 @@
 					"path": [
 						"user",
 						"nick"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "免登录查询用户信息",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:7777/user/find?username=zeng1234",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "7777",
+					"path": [
+						"user",
+						"find"
+					],
+					"query": [
+						{
+							"key": "username",
+							"value": "zeng1234"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "头像预览",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1/profile/2021_F5F5D0DD0510675827EAD32091D02E5E.jpg",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"path": [
+						"profile",
+						"2021_F5F5D0DD0510675827EAD32091D02E5E.jpg"
 					]
 				}
 			},
