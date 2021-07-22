@@ -1,32 +1,37 @@
 package zerorpc
 
 import (
-	"github.com/fatih/pool"
+	"context"
+	"github.com/jolestar/go-commons-pool/v2"
 	"github.com/sirupsen/logrus"
-	"net"
 	"reflect"
 	"time"
 )
 
 type GrettyClient struct {
-	serverAddr string
-	services   map[string]interface{}
-	connPool   pool.Pool
+	serverAddr  string
+	services    map[string]interface{}
+	sessionPool pool.ObjectPool
 }
 
 func NewGrettyClient(serverAddr string, coreSize, maxSize int) *GrettyClient {
 	// todo: test conn
-	factory := func() (net.Conn, error) {
-		return net.Dial("tcp", serverAddr)
+	//factory := func() (net.Conn, error) {
+	//	return net.Dial("tcp", serverAddr)
+	//}
+	ctx := context.Background()
+	config := pool.ObjectPoolConfig{
+		MaxTotal: maxSize,
+		MaxIdle:  coreSize,
 	}
-	connPool, err := pool.NewChannelPool(coreSize, maxSize, factory)
-	if err != nil {
-		logrus.Panicf("init conn pool err:%v", err)
-	}
-	return &GrettyClient{
+	sessionPool := pool.NewObjectPool(ctx, &MyPooledObjFactory{
 		serverAddr: serverAddr,
-		services:   make(map[string]interface{}),
-		connPool:   connPool,
+	}, &config)
+
+	return &GrettyClient{
+		serverAddr:  serverAddr,
+		services:    make(map[string]interface{}),
+		sessionPool: *sessionPool,
 	}
 }
 
@@ -51,18 +56,19 @@ func (pc *GrettyClient) pooledCallRPC(methodId string, fooPtr interface{}) {
 			inArgs = append(inArgs, arg.Interface())
 		}
 		// get remote session
-		conn, err := pc.connPool.Get()
-		//defer func() {
-		//	err := pc.connPool.Put()
-		//	if err != nil {
-		//		logrus.Errorf("GrettyClient put session err:%v", err)
-		//	}
-		//}()
+		ctx := context.Background()
+		pooledObj, err := pc.sessionPool.BorrowObject(ctx)
+		defer func() {
+			err := pc.sessionPool.ReturnObject(ctx, pooledObj)
+			if err != nil {
+				logrus.Errorf("GrettyClient put session err:%v", err)
+			}
+		}()
 		if err != nil {
 			logrus.Errorf("invoke remote method:%s get session form poll err:%v", methodId, err)
 			return zeroValueFnOut(fooPtr)
 		}
-		session := NewSession(conn)
+		session := pooledObj.(*MyPooledObj).session
 		// encode invocation
 		invocation := Invocation{MethodId: methodId, Args: inArgs}
 		writeBuf, errEncode := encode(invocation)
@@ -121,6 +127,5 @@ func (pc *GrettyClient) pooledCallRPC(methodId string, fooPtr interface{}) {
 //}
 
 func (pc *GrettyClient) Destroy() {
-	logrus.Infof("Rpc GrettyClient[now pool size:%v] destroy...", pc.connPool.Len())
-	pc.connPool.Close()
+	logrus.Infof("Rpc GrettyClient destroy...")
 }
