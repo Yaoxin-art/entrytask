@@ -169,8 +169,7 @@ func BenchmarkUpdateNick(b *testing.B) {
 			var err error
 			id := rand.Intn(clientSize)
 			client := clients[id]
-			iu := rand.Intn(userSize)
-			u := users[iu]
+			u := users[id]
 			un := nicked{
 				Username: u.Username,
 				Nickname: "New Nick",
