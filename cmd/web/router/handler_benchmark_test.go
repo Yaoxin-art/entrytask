@@ -20,11 +20,11 @@ type user struct {
 	Nickname string `json:"nickname"` // 昵称
 }
 
-const httpServerAddr = "http://localhost:7777"
+const httpServerAddr = "http://127.0.0.1:7777"
 
 const (
 	clientSize = 200
-	userSize   = 20000
+	userSize   = 200
 )
 
 var clients []*http.Client
@@ -32,7 +32,7 @@ var users []user
 
 func init() {
 	initUsers()
-	initHttpClients(false)
+	initHttpClients(true)
 }
 
 func initUsers() {
@@ -98,6 +98,7 @@ func BenchmarkLogin(b *testing.B) {
 	b.ResetTimer()
 	parallelism := clientSize
 	b.SetParallelism(parallelism)
+
 	defer fmt.Printf("parallelism:%d \n", parallelism)
 
 	b.RunParallel(func(pb *testing.PB) {
@@ -146,6 +147,8 @@ func BenchmarkLogin(b *testing.B) {
 }
 
 func BenchmarkUpdateNick(b *testing.B) {
+	defer destroyHttpClients()
+
 	b.ResetTimer()
 	parallelism := clientSize / 20
 	b.SetParallelism(parallelism)
@@ -197,21 +200,15 @@ func BenchmarkUpdateNick(b *testing.B) {
 	})
 }
 
-func BenchmarkUpdateProfile(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-
-	}
-}
-
 func BenchmarkInfo(b *testing.B) {
+	defer destroyHttpClients()
 
 	b.ResetTimer()
-	parallelism := clientSize / 20
+	parallelism := clientSize
 	b.SetParallelism(parallelism)
 	fmt.Printf("parallelism:%d \n", parallelism)
 
 	b.RunParallel(func(pb *testing.PB) {
-
 		for pb.Next() {
 			var err error
 			id := rand.Intn(clientSize)

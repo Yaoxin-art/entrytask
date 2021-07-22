@@ -60,7 +60,7 @@ func (s *Server) Close() {
 
 func (s *Server) handleNewConn(session *Session) {
 	defer session.Close()
-	logrus.Infof("Handle conn from addr:%v", session)
+	logrus.Infof("Handle conn from addr:%v", session.remoteAddr)
 	for {
 		// read
 		data, err := session.Read()
@@ -74,13 +74,13 @@ func (s *Server) handleNewConn(session *Session) {
 			if strings.Contains(err.Error(), "connect reset by peer") { // disconnect
 				break
 			}
-			result.Err = fmt.Sprintf("zerorpc request from addr:%s read err:%v", session, err)
+			result.Err = fmt.Sprintf("zerorpc request from addr:%s read err:%v", session.remoteAddr, err)
 
 			result.ResponseTimestamp = time.Now().UnixNano() // invoke end timestamp
 			resBytes, err := encode(result)
 			if err != nil {
 				// todo: ignore it ?
-				logrus.Errorf("encode zerorpc result err:%v, from addr:%v", err, session)
+				logrus.Errorf("encode zerorpc result err:%v, from addr:%v", err, session.remoteAddr)
 			}
 			errWrite := session.Write(resBytes)
 			if errWrite != nil {
@@ -97,12 +97,12 @@ func (s *Server) handleNewConn(session *Session) {
 		//logrus.Infof("read from invocation ok, invocation:%v", invocation)
 		if err != nil {
 			logrus.Errorf("decode err:%v", err)
-			result.Err = fmt.Sprintf("zerorpc request from addr:%s decode err:%v", session, err)
+			result.Err = fmt.Sprintf("zerorpc request from addr:%s decode err:%v", session.remoteAddr, err)
 
 			result.ResponseTimestamp = time.Now().UnixNano() // invoke end timestamp
 			resBytes, err := encode(result)
 			if err != nil {
-				logrus.Errorf("encode zerorpc result err:%v, from addr:%v", err, session)
+				logrus.Errorf("encode zerorpc result err:%v, from addr:%v", err, session.remoteAddr)
 			}
 			errWrite := session.Write(resBytes)
 			if errWrite != nil {
@@ -123,7 +123,7 @@ func (s *Server) handleNewConn(session *Session) {
 			result.ResponseTimestamp = time.Now().UnixNano() // invoke end timestamp
 			resBytes, err := encode(result)
 			if err != nil {
-				logrus.Errorf("encode zerorpc result err:%v, from addr:%v", err, session)
+				logrus.Errorf("encode zerorpc result err:%v, from addr:%v", err, session.remoteAddr)
 			}
 			errWrite := session.Write(resBytes)
 			if errWrite != nil {
@@ -151,12 +151,12 @@ func (s *Server) handleNewConn(session *Session) {
 		// encode
 		res, err := encode(result)
 		if err != nil {
-			logrus.Errorf("encode zerorpc result err:%v, from addr:%v", err, session)
+			logrus.Errorf("encode zerorpc result err:%v, from addr:%v", err, session.remoteAddr)
 		}
 		errWrite := session.Write(res)
 		// write
 		if errWrite != nil {
-			logrus.Errorf("write zerorpc result err:%v, from addr:%s", err, session)
+			logrus.Errorf("write zerorpc result err:%v, from addr:%s", err, session.remoteAddr)
 		}
 		logrus.Debugf("zerorpc invoke success, from addr:%s, methodId:%s, result:%v", session, invocation.MethodId, result)
 	}

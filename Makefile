@@ -4,7 +4,7 @@ ARGS=
 COVERPROFILE=coverage.txt
 DEBUG=
 
-build: clean fmt vet test
+build: vendor clean fmt vet test
 	go build pkg/...
 	go build internal/...
 	go build cmd/web/...
@@ -20,6 +20,9 @@ fmt:
 	go fmt ./internal/...
 	go fmt ./cmd/...
 
+vendor:
+	go mod vendor
+
 vet:
 	go fmt ./pkg/...
 	go fmt ./internal/...
@@ -34,11 +37,16 @@ cover:
 	go tool cover -html=coverage.out
 	rm -f coverage.out
 
-benchLogin:
+benchLogin: vendor
 	go test -v ./cmd/web/router -test.bench Login -test.cpuprofile benchmark_login_cpu.out -test.memprofile benchmark_login_mem.out $ARGS
 
-runRpc:
+
+benchInfo: vendor
+	go test -v ./cmd/web/router -test.bench Info -test.cpuprofile benchmark_info_cpu.out -test.memprofile benchmark_info_mem.out $ARGS
+
+
+runRpc: vendor
 	go run ./cmd/worker
 
-runWeb:
+runWeb:	vendor
 	go run ./cmd/web

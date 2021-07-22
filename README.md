@@ -56,4 +56,9 @@ EntryTask项目，通过实现RPC通用框架，使用Go HTTP API，MySQL或Redi
 ![make test](/docs/imgs/make_test.png)
 
 ### benchmark
-TODO：压测报告
+
+1、随机用户200并发
+![随机用户200并发情况下](/docs/imgs/benchmark_login_200.png)
+
+2、随机用户2000并发
+![随机用户2000并发情况下](/docs/imgs/benchmark_login_2000.png)

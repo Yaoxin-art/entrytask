@@ -23,6 +23,7 @@ func NewGrettyClient(serverAddr string, coreSize, maxSize int) *GrettyClient {
 	config := pool.ObjectPoolConfig{
 		MaxTotal: maxSize,
 		MaxIdle:  coreSize,
+		BlockWhenExhausted: true,
 	}
 	sessionPool := pool.NewObjectPool(ctx, &MyPooledObjFactory{
 		serverAddr: serverAddr,
@@ -58,16 +59,18 @@ func (pc *GrettyClient) pooledCallRPC(methodId string, fooPtr interface{}) {
 		// get remote session
 		ctx := context.Background()
 		pooledObj, err := pc.sessionPool.BorrowObject(ctx)
-		defer func() {
-			err := pc.sessionPool.ReturnObject(ctx, pooledObj)
-			if err != nil {
-				logrus.Errorf("GrettyClient put session err:%v", err)
-			}
-		}()
 		if err != nil {
 			logrus.Errorf("invoke remote method:%s get session form poll err:%v", methodId, err)
 			return zeroValueFnOut(fooPtr)
 		}
+		defer func() {
+			if pooledObj != nil {
+				err := pc.sessionPool.ReturnObject(ctx, pooledObj)
+				if err != nil {
+					logrus.Errorf("GrettyClient put session err:%v", err)
+				}
+			}
+		}()
 		session := pooledObj.(*MyPooledObj).session
 		// encode invocation
 		invocation := Invocation{MethodId: methodId, Args: inArgs}
