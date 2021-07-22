@@ -9,6 +9,8 @@ coverage.txt
 bin/
 *.test
 
+htmls/profile/
+
 # goland
 *.yml
 .idea/
