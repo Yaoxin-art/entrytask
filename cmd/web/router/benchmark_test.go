@@ -227,7 +227,7 @@ func BenchmarkInfoFix(b *testing.B) {
 			var err error
 			id := rand.Intn(clientSize)
 			client := clients[id]
-			uid := rand.Intn(userSize)
+			uid := rand.Intn(id)
 			user := users[uid]
 			requestUrl := httpServerAddr + "/user/find?username=" + user.Username
 			req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
