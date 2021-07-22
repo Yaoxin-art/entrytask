@@ -88,7 +88,6 @@ func selectPassword(passwd string) string {
 		var encoded string
 		err := rows.Scan(&encoded)
 		if err == nil {
-			logrus.Infof("password:%s", encoded)
 			return encoded
 		}
 	}

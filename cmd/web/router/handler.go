@@ -37,7 +37,7 @@ func logon(c *gin.Context) {
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("logon spend time:%d ns", end-start)
 	}()
 	// todo: check param
 	request := facade.UserLogonRequest{}
@@ -79,7 +79,7 @@ func login(c *gin.Context) {
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("login spend time:%d ns", end-start)
 	}()
 	request := facade.UserLoginRequest{}
 	err := c.BindJSON(&request)
@@ -138,7 +138,7 @@ func info(c *gin.Context) {
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("info spend time:%d ns", end-start)
 	}()
 	token, err := c.Cookie("token")
 	if err != nil || token == "" {
@@ -170,7 +170,7 @@ func findByUsername(c *gin.Context) {
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("findByUsername spend time:%d ns", end-start)
 	}()
 	username := c.DefaultQuery("username", "")
 	if username == "" {
@@ -249,7 +249,7 @@ func profileUpdate(c *gin.Context) {
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("profileUpdate spend time:%d ns", end-start)
 	}()
 	token, err := c.Cookie("token")
 	if err != nil || token == "" {
@@ -308,7 +308,7 @@ func nickUpdate(c *gin.Context) {
 	start := time.Now().UnixNano()
 	defer func() {
 		end := time.Now().UnixNano()
-		logrus.Infof("login spend time:%d ns", end - start)
+		logrus.Infof("nickUpdate spend time:%d ns", end-start)
 	}()
 	token, err := c.Cookie("token")
 	if err != nil || token == "" {

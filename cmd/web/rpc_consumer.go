@@ -6,14 +6,14 @@ import (
 )
 
 func configRPC() {
-	client.Config(facade.Logon, rpcServerAddr, &facade.UserLogon)
-	client.Config(facade.Login, rpcServerAddr, &facade.UserLogin)
-	client.Config(facade.Query, rpcServerAddr, &facade.UserQuery)
-	client.Config(facade.QueryToken, rpcServerAddr, &facade.UserQueryByToken)
-	client.Config(facade.UpdateNick, rpcServerAddr, &facade.UserUpdateNick)
-	client.Config(facade.UpdateProfile, rpcServerAddr, &facade.UserUpdateProfile)
+	client.ConfigRemoteMethod(facade.Logon, &facade.UserLogon)
+	client.ConfigRemoteMethod(facade.Login, &facade.UserLogin)
+	client.ConfigRemoteMethod(facade.Query, &facade.UserQuery)
+	client.ConfigRemoteMethod(facade.QueryToken, &facade.UserQueryByToken)
+	client.ConfigRemoteMethod(facade.UpdateNick, &facade.UserUpdateNick)
+	client.ConfigRemoteMethod(facade.UpdateProfile, &facade.UserUpdateProfile)
 
-	client.Config(facade.QueryList, rpcServerAddr, &facade.QueryUsernameList)
+	client.ConfigRemoteMethod(facade.QueryList, &facade.QueryUsernameList)
 
 	registerPojo()
 }

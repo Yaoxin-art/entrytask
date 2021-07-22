@@ -10,21 +10,21 @@ import (
 	"net"
 	"net/http"
 	"net/http/cookiejar"
-	"runtime"
 	"testing"
 	"time"
 )
 
 type user struct {
 	Username string `json:"username"` // 从数据库中获取
-	Password string `json:"password"`// 当前所有用户密码都为 "123456"
+	Password string `json:"password"` // 当前所有用户密码都为 "123456"
+	Nickname string `json:"nickname"` // 昵称
 }
 
 const httpServerAddr = "http://localhost:7777"
 
 const (
 	clientSize = 200
-	userSize   = 200
+	userSize   = 20000
 )
 
 var clients []*http.Client
@@ -32,7 +32,7 @@ var users []user
 
 func init() {
 	initUsers()
-	initHttpClients()
+	initHttpClients(false)
 }
 
 func initUsers() {
@@ -50,11 +50,13 @@ func initUsers() {
 	logrus.Infof("init user list success, user list size:%d, users:%v", len(users), users)
 }
 
-func initHttpClients() {
+func initHttpClients(login bool) {
 	for i := 0; i < clientSize; i++ {
 		client := getClient()
 		// 登录
-		clientLogin(client, users[i])
+		if login {
+			clientLogin(client, users[i])
+		}
 		clients = append(clients, client)
 	}
 }
@@ -72,10 +74,8 @@ func clientLogin(client *http.Client, u user) {
 		return
 	}
 	var err error
-	logrus.Infof("login user:%v", u)
-	logrus.Infof("login user:%v", string(data))
 	reqUrl := httpServerAddr + "/user/login"
-	req, err := http.NewRequest(http.MethodPost, reqUrl,  bytes.NewBuffer(data))
+	req, err := http.NewRequest(http.MethodPost, reqUrl, bytes.NewBuffer(data))
 	//res, err := client.Post(reqUrl, "application/json", bytes.NewBuffer(data))
 	res, err := client.Do(req)
 	if err != nil {
@@ -85,30 +85,42 @@ func clientLogin(client *http.Client, u user) {
 	if errBody != nil {
 		logrus.Errorf("get body err:%v", err)
 	}
-	logrus.Infof("post login response:%v", string(body[:]))
+	err = res.Body.Close()
+	if err != nil {
+		logrus.Errorf("close body err:%v", err)
+	}
+	logrus.Debugf("post login response:%v", string(body[:]))
 }
 
 func BenchmarkLogin(b *testing.B) {
 	defer destroyHttpClients()
+
 	b.ResetTimer()
-	b.SetParallelism(clientSize / 15)
-	fmt.Printf("parallelism:%d", clientSize / runtime.NumCPU())
+	parallelism := clientSize
+	b.SetParallelism(parallelism)
+	defer fmt.Printf("parallelism:%d \n", parallelism)
+
 	b.RunParallel(func(pb *testing.PB) {
-		defer func() {
-			logrus.Infof("test ...")
-		}()
 		for pb.Next() {
+			var err error
 			id := rand.Intn(clientSize)
 			client := clients[id]
-			requestUrl := httpServerAddr + "/user/info"
-			req, errReq:= http.NewRequest(http.MethodGet, requestUrl, nil)
-			if errReq != nil {
-				b.Error(errReq)
+			iu := rand.Intn(userSize)
+			u := users[iu]
+			data, errData := json.Marshal(u)
+			if errData != nil {
+				logrus.Panicf("json error:%v", u)
+				return
+			}
+			reqUrl := httpServerAddr + "/user/login"
+			req, err := http.NewRequest(http.MethodPost, reqUrl, bytes.NewBuffer(data))
+			if err != nil {
+				b.Error(err)
 				continue
 			}
-			res, errRes := client.Do(req)
-			if errRes != nil {
-				b.Error(errRes)
+			res, err := client.Do(req)
+			if err != nil {
+				b.Error(err)
 				continue
 			}
 			if res.StatusCode != http.StatusOK {
@@ -120,25 +132,69 @@ func BenchmarkLogin(b *testing.B) {
 				}
 				continue
 			}
-			_, err := ioutil.ReadAll(res.Body)
+			body, err := ioutil.ReadAll(res.Body)
 			if err != nil {
-				b.Error(err)
-				continue
+				logrus.Errorf("login get body err:%v", err)
 			}
-			errRes = res.Body.Close()
-			if errRes != nil {
-				b.Error(errRes)
+			err = res.Body.Close()
+			if err != nil {
+				logrus.Errorf("login close body err:%v", err)
 			}
-
+			logrus.Debugf("login response:%v", string(body[:]))
 		}
 	})
 }
 
-
 func BenchmarkUpdateNick(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	b.ResetTimer()
+	parallelism := clientSize / 20
+	b.SetParallelism(parallelism)
+	fmt.Printf("parallelism:%d \n", parallelism)
 
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			var err error
+			id := rand.Intn(clientSize)
+			client := clients[id]
+			iu := rand.Intn(userSize)
+			u := users[iu]
+			u.Nickname = u.Nickname + ""
+			data, errData := json.Marshal(u)
+			if errData != nil {
+				logrus.Panicf("json error:%v", u)
+				return
+			}
+			reqUrl := httpServerAddr + "/user/login"
+			req, err := http.NewRequest(http.MethodPost, reqUrl, bytes.NewBuffer(data))
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			res, err := client.Do(req)
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			if res.StatusCode != http.StatusOK {
+				resBody, _ := ioutil.ReadAll(res.Body)
+				b.Error(string(resBody))
+				err := res.Body.Close()
+				if err != nil {
+					b.Error(err)
+				}
+				continue
+			}
+			body, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				logrus.Errorf("login get body err:%v", err)
+			}
+			err = res.Body.Close()
+			if err != nil {
+				logrus.Errorf("login close body err:%v", err)
+			}
+			logrus.Infof("login response:%v", string(body[:]))
+		}
+	})
 }
 
 func BenchmarkUpdateProfile(b *testing.B) {
@@ -149,6 +205,49 @@ func BenchmarkUpdateProfile(b *testing.B) {
 
 func BenchmarkInfo(b *testing.B) {
 
+	b.ResetTimer()
+	parallelism := clientSize / 20
+	b.SetParallelism(parallelism)
+	fmt.Printf("parallelism:%d \n", parallelism)
+
+	b.RunParallel(func(pb *testing.PB) {
+
+		for pb.Next() {
+			var err error
+			id := rand.Intn(clientSize)
+			client := clients[id]
+			requestUrl := httpServerAddr + "/user/info"
+			req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			res, err := client.Do(req)
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			if res.StatusCode != http.StatusOK {
+				resBody, _ := ioutil.ReadAll(res.Body)
+				b.Error(string(resBody))
+				err := res.Body.Close()
+				if err != nil {
+					b.Error(err)
+				}
+				continue
+			}
+			body, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				logrus.Errorf("get body err:%v", err)
+			}
+			err = res.Body.Close()
+			if err != nil {
+				logrus.Errorf("close body err:%v", err)
+			}
+			logrus.Infof("info response:%v", string(body[:]))
+
+		}
+	})
 }
 
 const (

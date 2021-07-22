@@ -32,16 +32,21 @@ var (
 	httpPort      = ":7777"
 	rpcServerAddr = "127.0.0.1:9999"
 )
-var client *zerorpc.Client
+var client *zerorpc.GrettyClient
 
 func main() {
 	initLog()
 
-	client = zerorpc.NewClient() // init rpc client instance
-	configRPC()                  // config for rpc client
+	client = zerorpc.NewGrettyClient(rpcServerAddr, 10, 50) // init rpc client instance
+	configRPC()                                             // config for rpc client
 
 	httpServer := router.InitGin() // init http server with gin
-	go httpServer.Run(httpPort)    // listen and serve on 0.0.0.0:7777
+	go func() {
+		err := httpServer.Run(httpPort)
+		if err != nil {
+			logrus.Warnf("Gin run err:%v", err)
+		}
+	}() // listen and serve on 0.0.0.0:7777
 
 	logrus.Infof("web app started, listen at:%s", httpPort)
 

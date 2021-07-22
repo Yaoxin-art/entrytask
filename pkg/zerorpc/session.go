@@ -62,11 +62,13 @@ func (s *Session) Read() ([]byte, error) {
 	return data, nil
 }
 
-func (s *Session) Close() {
+func (s *Session) Close() error {
 	err := s.conn.Close()
 	if err != nil {
 		logrus.Errorf("session close err:%v, remote addr:%v", err, s.remoteAddr)
+		return err
 	} else {
 		logrus.Infof("session closed, remote addr:%s", s.remoteAddr)
+		return nil
 	}
 }
