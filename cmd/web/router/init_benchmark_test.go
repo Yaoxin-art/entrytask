@@ -1,9 +1,12 @@
 package router
 
 import (
+	"context"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	pool "github.com/jolestar/go-commons-pool/v2"
 	"github.com/sirupsen/logrus"
+	"net/http"
 )
 
 const (
@@ -33,7 +36,9 @@ func selectUsernameList(size int) ([]string, error) {
 	if err != nil {
 		return make([]string, 0, 0), err
 	}
-	defer rows.Close()
+	defer func(rows *sqlx.Rows) {
+		_ = rows.Close()
+	}(rows)
 	var results []string
 	for rows.Next() {
 		var item string
@@ -45,4 +50,48 @@ func selectUsernameList(size int) ([]string, error) {
 		results = append(results, item)
 	}
 	return results, nil
+}
+
+// http client pool
+type httpClient struct {
+	client *http.Client
+}
+
+type httpClientFactory struct {
+	login bool
+}
+
+
+func (f *httpClientFactory) MakeObject(ctx context.Context) (*pool.PooledObject, error) {
+	return pool.NewPooledObject(
+			&httpClient{
+				client: initHttpClients(f.login),
+			}),
+		nil
+}
+
+func (f *httpClientFactory) DestroyObject(ctx context.Context, object *pool.PooledObject) error {
+	// do destroy
+	myObj := object.Object.(*httpClient)
+	logrus.Debugf("sessoin in poll destroyed, ctx:%v", ctx)
+	myObj.client.CloseIdleConnections()
+	return nil
+}
+
+func (f *httpClientFactory) ValidateObject(ctx context.Context, object *pool.PooledObject) bool {
+	// do validate
+	logrus.Debugf("sessoin in pool destroyed, ctx:%v", ctx)
+	return true
+}
+
+func (f *httpClientFactory) ActivateObject(ctx context.Context, object *pool.PooledObject) error {
+	// do activate
+	logrus.Debugf("session in pool activate, ctx:%v", ctx)
+	return nil
+}
+
+func (f *httpClientFactory) PassivateObject(ctx context.Context, object *pool.PooledObject) error {
+	// do passivate(put into idle list)
+	logrus.Debugf("session in pool passivate, ctx:%v", ctx)
+	return nil
 }

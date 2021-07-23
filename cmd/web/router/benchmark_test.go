@@ -2,9 +2,12 @@ package router
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	pool "github.com/jolestar/go-commons-pool/v2"
 	"github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -28,15 +31,31 @@ type nicked struct {
 const httpServerAddr = "http://127.0.0.1:7777"
 
 const (
-	clientSize = 2000
+	clientSize = 200
 	userSize   = 20000
 )
 
-var clients []*http.Client
+
 var users []user
+var clients *HttpClientPool
+
+type HttpClientPool struct {
+	clientPool *pool.ObjectPool
+}
+func NewHttpClientPool(login bool, size int) *HttpClientPool {
+	ctx := context.Background()
+	config := pool.ObjectPoolConfig{
+		MaxTotal:           size,
+		MaxIdle:            size,
+		BlockWhenExhausted: true,
+	}
+	return &HttpClientPool{
+		clientPool: pool.NewObjectPool(ctx, &httpClientFactory{login: login}, &config),
+	}
+}
 
 func initForBenchmark(login bool) {
-	clients = make([]*http.Client, 0)
+	clients = NewHttpClientPool(login, clientSize)
 	users = make([]user, 0)
 
 	initUsers()
@@ -58,20 +77,18 @@ func initUsers() {
 	logrus.Debugf("init user list success, user list size:%d, users:%v", len(users), users)
 }
 
-func initHttpClients(login bool) {
-	for i := 0; i < clientSize; i++ {
-		client := getClient()
-		// 登录
-		if login {
-			clientLogin(client, users[i])
-		}
-		clients = append(clients, client)
+func initHttpClients(login bool) *http.Client {
+	i := rand.Intn(userSize)
+	client := getClient()
+	// 登录
+	if login {
+		clientLogin(client, users[i])
 	}
+	return client
 }
 func destroyHttpClients() {
-	for _, client := range clients {
-		client.CloseIdleConnections()
-	}
+	ctx := context.Background()
+	clients.clientPool.Close(ctx)
 }
 
 // clientLogin 登录用户，使client具备登录后的token凭证
@@ -110,28 +127,36 @@ func BenchmarkLogin(b *testing.B) {
 	initForBenchmark(false)
 	defer destroyHttpClients()
 
+	ctx := context.Background()
 	b.ResetTimer()
 	parallelism := clientSize
 	b.SetParallelism(parallelism)
 
-	defer fmt.Printf("parallelism:%d \n", parallelism)
+	defer fmt.Printf("benchmark login parallelism:%d \n", parallelism)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			var err error
-			id := rand.Intn(clientSize)
-			client := clients[id]
+			obj, err := clients.clientPool.BorrowObject(ctx)
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			client := obj.(*httpClient).client
 			iu := rand.Intn(userSize)
 			u := users[iu]
 			data, errData := json.Marshal(u)
 			if errData != nil {
 				logrus.Panicf("json error:%v", u)
-				return
+				b.Skipped()
+				_ = clients.clientPool.ReturnObject(ctx, obj)
+				continue
 			}
 			reqUrl := httpServerAddr + "/user/login"
 			req, err := http.NewRequest(http.MethodPost, reqUrl, bytes.NewBuffer(data))
 			if err != nil {
 				b.Error(err)
+				_ = clients.clientPool.ReturnObject(ctx, obj)
 				continue
 			}
 			res, err := client.Do(req)
@@ -141,31 +166,27 @@ func BenchmarkLogin(b *testing.B) {
 			err = req.Body.Close()
 			if err != nil {
 				b.Error(err)
+				_ = clients.clientPool.ReturnObject(ctx, obj)
 				continue
 			}
+
 			if res.StatusCode != http.StatusOK {
-				resBody, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					b.Error(err)
-					continue
-				}
-				b.Log(string(resBody))
+				_, err := io.Copy(ioutil.Discard, res.Body)
 				err = res.Body.Close()
 				if err != nil {
 					b.Error(err)
+					_ = clients.clientPool.ReturnObject(ctx, obj)
 					continue
 				}
 			} else {
-				body, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					logrus.Errorf("get body err:%v", err)
-				}
+				_, err := io.Copy(ioutil.Discard, res.Body)
 				err = res.Body.Close()
 				if err != nil {
+					b.Error(err)
 					logrus.Errorf("close body err:%v", err)
 				}
-				logrus.Debugf("get response:%v", string(body[:]))
 			}
+			_ = clients.clientPool.ReturnObject(ctx, obj)
 		}
 	})
 }
@@ -174,17 +195,23 @@ func BenchmarkUpdateNick(b *testing.B) {
 	initForBenchmark(true)
 	defer destroyHttpClients()
 
+	ctx := context.Background()
 	b.ResetTimer()
 	parallelism := clientSize / 20
 	b.SetParallelism(parallelism)
-	fmt.Printf("parallelism:%d \n", parallelism)
+	fmt.Printf("benchmark update nickname parallelism:%d \n", parallelism)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			var err error
-			id := rand.Intn(clientSize)
-			client := clients[id]
-			u := users[id]
+			obj, err := clients.clientPool.BorrowObject(ctx)
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			client := obj.(*httpClient).client
+			iu := rand.Intn(userSize)
+			u := users[iu]
 			un := nicked{
 				Username: u.Username,
 				Nickname: "New Nick",
@@ -192,12 +219,14 @@ func BenchmarkUpdateNick(b *testing.B) {
 			data, errData := json.Marshal(un)
 			if errData != nil {
 				logrus.Panicf("json error:%v", un)
-				return
+				_ = clients.clientPool.ReturnObject(ctx, obj)
+				continue
 			}
 			reqUrl := httpServerAddr + "/user/login"
 			req, err := http.NewRequest(http.MethodPost, reqUrl, bytes.NewBuffer(data))
 			if err != nil {
 				b.Error(err)
+				_ = clients.clientPool.ReturnObject(ctx, obj)
 				continue
 			}
 			res, err := client.Do(req)
@@ -207,87 +236,83 @@ func BenchmarkUpdateNick(b *testing.B) {
 			err = req.Body.Close()
 			if err != nil {
 				b.Error(err)
+				_ = clients.clientPool.ReturnObject(ctx, obj)
 				continue
 			}
 
 			if res.StatusCode != http.StatusOK {
-				resBody, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					b.Error(err)
-					continue
-				}
-				b.Log(string(resBody))
+				_, err := io.Copy(ioutil.Discard, res.Body)
 				err = res.Body.Close()
 				if err != nil {
 					b.Error(err)
+					_ = clients.clientPool.ReturnObject(ctx, obj)
 					continue
 				}
 			} else {
-				body, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					logrus.Errorf("get body err:%v", err)
-				}
+				_, err := io.Copy(ioutil.Discard, res.Body)
 				err = res.Body.Close()
 				if err != nil {
+					b.Error(err)
 					logrus.Errorf("close body err:%v", err)
 				}
-				logrus.Debugf("get response:%v", string(body[:]))
 			}
+			_ = clients.clientPool.ReturnObject(ctx, obj)
 		}
 	})
 }
 
 func BenchmarkInfoFix(b *testing.B) {
 	initForBenchmark(false)
-	defer destroyHttpClients()
+	//defer destroyHttpClients()
 
+	ctx := context.Background()
 	b.ResetTimer()
 	parallelism := clientSize
 	b.SetParallelism(parallelism)
-	fmt.Printf("parallelism:%d \n", parallelism)
+	fmt.Printf("benchmark info fix parallelism:%d \n", parallelism)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			var err error
+			obj, err := clients.clientPool.BorrowObject(ctx)
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			client := obj.(*httpClient).client
 			id := rand.Intn(clientSize)
-			client := clients[id]
 			u := users[id]
 			requestUrl := httpServerAddr + "/user/find?username=" + u.Username
 			req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 			if err != nil {
 				b.Error(err)
+				_ = clients.clientPool.ReturnObject(ctx, obj)
 				continue
 			}
-			req.Close = true
 			res, err := client.Do(req)
 			if err != nil {
 				b.Error(err)
+				_ = clients.clientPool.ReturnObject(ctx, obj)
 				continue
 			}
 
 			if res.StatusCode != http.StatusOK {
-				resBody, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					b.Error(err)
-					continue
-				}
-				b.Log(string(resBody))
+				_, err := io.Copy(ioutil.Discard, res.Body)
 				err = res.Body.Close()
 				if err != nil {
 					b.Error(err)
+					_ = clients.clientPool.ReturnObject(ctx, obj)
 					continue
 				}
 			} else {
-				body, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					logrus.Errorf("get body err:%v", err)
-				}
+				_, err := io.Copy(ioutil.Discard, res.Body)
 				err = res.Body.Close()
 				if err != nil {
+					b.Error(err)
 					logrus.Errorf("close body err:%v", err)
 				}
-				logrus.Debugf("get response:%v", string(body[:]))
 			}
+			_ = clients.clientPool.ReturnObject(ctx, obj)
 		}
 	})
 }
@@ -296,66 +321,68 @@ func BenchmarkInfoRandom(b *testing.B) {
 	initForBenchmark(false)
 	defer destroyHttpClients()
 
+	ctx := context.Background()
 	b.ResetTimer()
 	parallelism := clientSize
 	b.SetParallelism(parallelism)
-	fmt.Printf("parallelism:%d \n", parallelism)
+	fmt.Printf("benchmark info random parallelism:%d \n", parallelism)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			var err error
-			id := rand.Intn(clientSize)
-			client := clients[id]
+			obj, err := clients.clientPool.BorrowObject(ctx)
+			if err != nil {
+				b.Error(err)
+				continue
+			}
+			client := obj.(*httpClient).client
 			uid := rand.Intn(userSize)
 			u := users[uid]
 			requestUrl := httpServerAddr + "/user/find?username=" + u.Username
 			req, err := http.NewRequest(http.MethodGet, requestUrl, nil)
 			if err != nil {
 				b.Error(err)
+				_ = clients.clientPool.ReturnObject(ctx, obj)
 				continue
 			}
 			res, err := client.Do(req)
 			if err != nil {
 				b.Error(err)
+				_ = clients.clientPool.ReturnObject(ctx, obj)
 				continue
 			}
 
 			if res.StatusCode != http.StatusOK {
-				resBody, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					b.Error(err)
-					continue
-				}
-				b.Log(string(resBody))
+				_, err := io.Copy(ioutil.Discard, res.Body)
 				err = res.Body.Close()
 				if err != nil {
 					b.Error(err)
+					_ = clients.clientPool.ReturnObject(ctx, obj)
 					continue
 				}
 			} else {
-				body, err := ioutil.ReadAll(res.Body)
-				if err != nil {
-					logrus.Errorf("get body err:%v", err)
-				}
+				_, err := io.Copy(ioutil.Discard, res.Body)
 				err = res.Body.Close()
 				if err != nil {
+					b.Error(err)
 					logrus.Errorf("close body err:%v", err)
 				}
-				logrus.Debugf("get response:%v", string(body[:]))
 			}
+			_ = clients.clientPool.ReturnObject(ctx, obj)
 		}
 	})
 }
 
 const (
-	MaxConnsPerHost     int = 200
-	MaxIdleConns        int = 10
+	MaxConnsPerHost     int = 1
+	MaxIdleConns        int = 0
 	MaxIdleConnsPerHost int = 0
 )
 
 // getClient init http client
 func getClient() *http.Client {
-	cookieJar, err := cookiejar.New(nil)
+	cookieJar, err := cookiejar.New(&cookiejar.Options{
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -363,13 +390,12 @@ func getClient() *http.Client {
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
+				Timeout:   1 * time.Second,
+				KeepAlive: 90 * time.Second,
 			}).DialContext,
 			MaxConnsPerHost:     MaxConnsPerHost,
 			MaxIdleConns:        MaxIdleConns,
 			MaxIdleConnsPerHost: MaxIdleConnsPerHost,
-			//DisableKeepAlives: 	 true,
 		},
 		Jar: cookieJar,
 	}

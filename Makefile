@@ -38,13 +38,13 @@ cover:
 	rm -f coverage.out
 
 benchLogin:
-	go test -v ./cmd/web/router -test.bench Login
+	go test -v ./cmd/web/router -test.bench Login -test.count 1 -benchtime=60s
 
 benchInfoFix:
-	go test -v ./cmd/web/router -test.bench InfoFix -test.count 2
+	go test -v ./cmd/web/router -test.bench InfoFix -test.count 1 -benchtime=60s
 
 benchInfoRandom:
-	go test -v ./cmd/web/router -test.bench InfoRandom -test.count 2
+	go test -v ./cmd/web/router -test.bench InfoRandom -test.count 1 -benchtime=60s
 
 runRpc: vendor
 	go run ./cmd/worker

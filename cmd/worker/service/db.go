@@ -16,8 +16,8 @@ func initDB() *sqlx.DB {
 	if err != nil {
 		logrus.Panic(err)
 	}
-	mysql.SetMaxIdleConns(10)
-	mysql.SetMaxOpenConns(100)
+	mysql.SetMaxIdleConns(100)
+	mysql.SetMaxOpenConns(200)
 	logrus.Info("init mysql client instance success.")
 	return mysql
 }

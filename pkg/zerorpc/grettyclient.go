@@ -12,27 +12,22 @@ type GrettyClient struct {
 	serverAddr  string
 	services    map[string]interface{}
 	sessionPool *pool.ObjectPool
+	ctx         context.Context
 }
 
 func NewGrettyClient(serverAddr string, coreSize, maxSize int) *GrettyClient {
 	// todo: test conn
-	//factory := func() (net.Conn, error) {
-	//	return net.Dial("tcp", serverAddr)
-	//}
 	ctx := context.Background()
-	config := pool.ObjectPoolConfig{
-		MaxTotal:           maxSize,
-		MaxIdle:            coreSize,
-		BlockWhenExhausted: true,
-	}
+	config := pool.NewDefaultPoolConfig()
 	sessionPool := pool.NewObjectPool(ctx, &MyPooledObjFactory{
 		serverAddr: serverAddr,
-	}, &config)
+	}, config)
 
 	return &GrettyClient{
 		serverAddr:  serverAddr,
 		services:    make(map[string]interface{}),
 		sessionPool: sessionPool,
+		ctx: 		 ctx,
 	}
 }
 
@@ -57,21 +52,21 @@ func (pc *GrettyClient) pooledCallRPC(methodId string, fooPtr interface{}) {
 			inArgs = append(inArgs, arg.Interface())
 		}
 		// get remote session
-		ctx := context.Background()
-		pooledObj, err := pc.sessionPool.BorrowObject(ctx)
+		pooledObj, err := pc.sessionPool.BorrowObject(pc.ctx)
 		if err != nil {
 			logrus.Errorf("invoke remote method:%s get session form poll err:%v", methodId, err)
 			return zeroValueFnOut(fooPtr)
 		}
 		defer func() {
 			if pooledObj != nil {
-				err := pc.sessionPool.ReturnObject(ctx, pooledObj)
+				err := pc.sessionPool.ReturnObject(pc.ctx, pooledObj)
 				if err != nil {
 					logrus.Errorf("GrettyClient put session err:%v", err)
 				}
 			}
 		}()
 		session := pooledObj.(*MyPooledObj).session
+
 		// encode invocation
 		invocation := Invocation{MethodId: methodId, Args: inArgs}
 		writeBuf, errEncode := encode(invocation)

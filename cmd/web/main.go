@@ -13,7 +13,7 @@ import (
 )
 
 func initLog() {
-	//设置输出样式，自带的只有两种样式logrus.JSONFormatter{}和logrus.TextFormatter{}
+	//设置输出样式，自带的只有两种样式 logrus.JSONFormatter{}和 logrus.TextFormatter{}
 	logrus.SetFormatter(&logrus.TextFormatter{
 		TimestampFormat: time.RFC3339,
 		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
@@ -37,7 +37,7 @@ var client *zerorpc.GrettyClient
 func main() {
 	initLog()
 
-	client = zerorpc.NewGrettyClient(rpcServerAddr, 100, 100) // init rpc client instance
+	client = zerorpc.NewGrettyClient(rpcServerAddr, 10, 10) // init rpc client instance
 	configRPC()                                              // config for rpc client
 
 	httpServer := router.InitGin() // init http server with gin

@@ -11,6 +11,7 @@ import (
 type Session struct {
 	conn       net.Conn
 	remoteAddr interface{}
+	destroyed  bool
 }
 
 const sizeOfInt = 4
@@ -33,6 +34,7 @@ func (s *Session) Write(data []byte) error {
 			return nil
 		}
 		logrus.Errorf("write data to:%s err:%v", s.remoteAddr, err)
+		s.destroyed = true
 		return err
 	}
 	logrus.Debugf("write data to:%s success, length:%d", s.remoteAddr, len(buf))
@@ -44,10 +46,11 @@ func (s *Session) Read() ([]byte, error) {
 	topSizeOfInt := make([]byte, sizeOfInt)
 	_, errReadHead := io.ReadFull(s.conn, topSizeOfInt)
 	if errReadHead != nil {
-		//if errReadHead.Error() == "EOF" || strings.Contains(errReadHead.Error(), "connect reset by peer") {	// ignore
-		//	return nil, errReadHead
-		//}
-		//logrus.Errorf("read data length from addr:%s err:%v", s.remoteAddr, errReadHead)
+		if errReadHead.Error() == "EOF" || strings.Contains(errReadHead.Error(), "reset by peer") {	// ignore
+			s.destroyed = true
+			return nil, errReadHead
+		}
+		logrus.Errorf("read data length from addr:%s err:%v", s.remoteAddr, errReadHead)
 		return nil, errReadHead
 	}
 
@@ -63,12 +66,13 @@ func (s *Session) Read() ([]byte, error) {
 }
 
 func (s *Session) Close() error {
+	s.destroyed = true
 	err := s.conn.Close()
 	if err != nil {
 		logrus.Errorf("session close err:%v, remote addr:%v", err, s.remoteAddr)
 		return err
 	} else {
-		logrus.Infof("session closed, remote addr:%s", s.remoteAddr)
+		logrus.Debugf("session closed, remote addr:%s", s.remoteAddr)
 		return nil
 	}
 }

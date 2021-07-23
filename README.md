@@ -137,66 +137,72 @@ benchInfoRandom:
 ```
 
 #### make benchInfoFix 执行结果
-并发度200的情况下：
+并发度200的情况下(清空redis后执行)：
 ```
 goos: darwin
 goarch: amd64
 pkg: git.garena.com/zhenrong.zeng/entrytask/cmd/web/router
 cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
 BenchmarkInfoFix
-parallelism:200 
-parallelism:200 
-parallelism:200 
-BenchmarkInfoFix-12    	    3493	    653272 ns/op
+benchmark info fix parallelism:200 
+benchmark info fix parallelism:200 
+benchmark info fix parallelism:200 
+benchmark info fix parallelism:200 
+BenchmarkInfoFix-12    	  482190	    150885 ns/op
 PASS
-ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	2.847s
+ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	74.960s
 ```
 
-并发度2000的情况下：
+并发度2000的情况下(清空redis后执行)：
 ```
 goos: darwin
 goarch: amd64
 pkg: git.garena.com/zhenrong.zeng/entrytask/cmd/web/router
 cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
 BenchmarkInfoFix
-parallelism:2000 
-parallelism:2000 
-parallelism:2000 
-BenchmarkInfoFix-12    	    1862	    804518 ns/op
+benchmark info fix parallelism:2000 
+benchmark info fix parallelism:2000 
+benchmark info fix parallelism:2000 
+benchmark info fix parallelism:2000 
+BenchmarkInfoFix-12    	  461310	    148644 ns/op
 PASS
-ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	2.016s
+ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	70.690s
 ```
 
 #### make benchInfoRandom 执行结果
 
-并发度200的情况下：
+并发度200的情况下(清空redis后执行)：
 ```
 goos: darwin
 goarch: amd64
 pkg: git.garena.com/zhenrong.zeng/entrytask/cmd/web/router
 cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
 BenchmarkInfoRandom
-parallelism:200 
-parallelism:200 
-parallelism:200 
-BenchmarkInfoRandom-12    	    3170	   1069656 ns/op
+benchmark info random parallelism:200 
+benchmark info random parallelism:200 
+benchmark info random parallelism:200 
+benchmark info random parallelism:200 
+benchmark info random parallelism:200 
+BenchmarkInfoRandom-12    	  477351	    160185 ns/op
 PASS
-ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	3.903s
+ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	122.942s
 ```
 
-并发度2000的情况下：
+并发度2000的情况下(清空redis后执行)：
 ```
 goos: darwin
 goarch: amd64
 pkg: git.garena.com/zhenrong.zeng/entrytask/cmd/web/router
 cpu: Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz
 BenchmarkInfoRandom
-parallelism:2000 
-parallelism:2000 
-parallelism:2000 
-BenchmarkInfoRandom-12    	    1936	    651716 ns/op
+benchmark info random parallelism:2000 
+benchmark info random parallelism:2000 
+benchmark info random parallelism:2000 
+benchmark info random parallelism:2000 
+benchmark info random parallelism:2000 
+BenchmarkInfoRandom-12    	  484503	    171512 ns/op
 PASS
-ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	1.796s
+ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	142.591s
 ```
 
 **结果分析：**
@@ -204,8 +210,8 @@ ok  	git.garena.com/zhenrong.zeng/entrytask/cmd/web/router	1.796s
 
 | 测试项 | 固定200用户并发 | 随机200用户并发 | 固定2000用户并发 | 随机2000用户并发 |
 | --- | --- | --- | --- | --- |
-| 平均耗时 | 653272 ns/op | 1069656 ns/op | 804518 ns/op | 651716 ns/op |
-| 平均QPS | 3493 | 3170 | 1862 | 1936 |
+| 平均耗时 | 150885 ns/op | 160185 ns/op | 144715 ns/op | 171512 ns/op |
+| 平均QPS | 482190(times) / 74.960(s) = 6432.63 (t/s) | 477351(times) / 122.942(s) = 3638.72(t/s) | 501991(times) / 74.602(s) = 6728.92(t/s) | 484503(times) / 142.591(s) = 3397.85(t/s) |
 | 目标QPS | 3000 | 1000 | 1500 | 800 |
 
 
