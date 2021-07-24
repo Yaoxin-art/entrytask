@@ -25,7 +25,7 @@ EntryTask项目，通过实现RPC通用框架，使用Go HTTP API，MySQL或Redi
 ![更新头像流程图](/docs/imgs/update_profile.png)
 
 ## 四、接口设计
-接口文档地址：[接口文档](https://confluence.shopee.io/pages/viewpage.action?pageId=597241979 "CF") 
+接口文档地址：
 
 ## 五、存储设计
 存储使用到redis和mysql，其中mysql单表存1kw用户信息（表结构简单，内容较少），redis用户缓存用户信息（使用hash数据类型，不包含密码）及登录用户的token与用户名映射关系（string数据类型）。
